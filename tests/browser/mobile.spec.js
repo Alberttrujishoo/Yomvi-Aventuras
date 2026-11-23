@@ -8,9 +8,9 @@ test('touch starts the game, keeps simultaneous actions and pauses on rotation',
   await page.goto('/');
   await page.getByRole('button', { name: 'Omitir intro' }).tap();
   await expect.poll(() => page.evaluate(() => GAME.state)).toBe('title');
-  await page.touchscreen.tap(420, 190);
+  await page.getByRole('button', { name: 'Iniciar', exact: true }).tap();
   await expect.poll(() => page.evaluate(() => GAME.state)).toBe('briefing');
-  await page.touchscreen.tap(420, 190);
+  await page.getByRole('button', { name: 'Empezar ya' }).tap();
   await expect.poll(() => page.evaluate(() => [GAME.state, GAME.canvas.width, GAME.canvas.height]))
     .toEqual(['playing', 720, 405]);
 
@@ -40,7 +40,7 @@ test('touch starts the game, keeps simultaneous actions and pauses on rotation',
   await expect.poll(() => page.evaluate(() => GAME.state)).toBe('paused');
   await page.setViewportSize({ width: 844, height: 390 });
   await expect(page.getByText('GIRA TU TELÉFONO', { exact: true })).toBeHidden();
-  await page.touchscreen.tap(420, 190);
+  await page.getByRole('button', { name: 'Reanudar' }).tap();
   await expect.poll(() => page.evaluate(() => GAME.state)).toBe('playing');
   expect(failures).toEqual([]);
 });

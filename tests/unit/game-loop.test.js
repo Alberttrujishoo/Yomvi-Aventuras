@@ -6,7 +6,7 @@ import { Input } from '../../src/input/actions.js';
 function simulate(hz) {
   const game = Object.assign(Object.create(Game.prototype), {
     lastTs: 0, simulationTime: 0, time: 0, frames: 0, actions: 0,
-    state: 'playing', renderScale: 0.75, viewBlocks: new Set(),
+    state: 'playing', gamepad: { poll() {} }, renderScale: 0.75, viewBlocks: new Set(),
     lastRenderedState: 'playing', nextRenderTime: 1000 / 60,
     render() { this.frames++; },
     update() { if (Input.hit('attack')) this.actions++; },

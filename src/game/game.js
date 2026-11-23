@@ -8,6 +8,7 @@ import { Player } from './player.js';
 import { drawNpc, drawNpcBubble, spawnNpc, updateNpcEvent } from './npc-event.js';
 import { PROP_DEFS, Stage } from './stage.js';
 import { Input } from '../input/actions.js';
+import { createGamepadInput } from '../input/gamepad.js';
 import { TouchControls } from '../input/touch.js';
 import { LEVELS } from '../levels/index.js';
 import { Assets } from '../media/assets.js';
@@ -40,6 +41,8 @@ class Game {
     this.lastTs = null;
     this.simulationTime = 0;
     this.viewBlocks = new Set();
+    this.gamepad = createGamepadInput(Input);
+    this.skipIntro = null;
     this.score = 0;
     this.hiScore = this.loadHi();
     this.kills = 0;
@@ -117,6 +120,7 @@ class Game {
     this.simulationTime = 0;
     this.nextRenderTime = null;
     Input.clear();
+    this.gamepad.suspend();
     if (this.viewBlocked) {
       if (this.state === 'playing') this.state = 'paused';
       Sound.suspend();
@@ -130,6 +134,7 @@ class Game {
       return;
     }
 
+    this.gamepad.poll(this.state);
     const elapsed = this.lastTs === null ? SIMULATION_STEP : (ts - this.lastTs) / 1000;
     this.lastTs = ts;
     this.simulationTime = Math.min(MAX_CATCH_UP, this.simulationTime + Math.max(0, elapsed));
@@ -175,6 +180,8 @@ class Game {
     this.boss = null;
     this.bossDefeated = false;
     this.bossStarted = false;
+    this.bossRecoveryTime = 0;
+    this.bossRecovery = null;
     this.enemies = [];
     this.projectiles = [];
     this.shockwaves = [];
@@ -357,6 +364,7 @@ class Game {
   }
 
   onBossReady() {
+    this.bossRecoveryTime = rand(10, 16);
     // The boss has walked on screen: only now start the shared boss theme.
     this.setBossMusic(true);
     if (Sound.hasExternal('bossMp3')) Sound.restartExternal();
@@ -372,6 +380,7 @@ class Game {
   onBossDefeated() {
     if (this.bossDefeated) return;
     this.bossDefeated = true;
+    if (this.bossRecovery) this.bossRecovery.dead = true;
     this.hiScore = Math.max(this.hiScore, this.score);
     this.hitstopT = 0;
     this.shakeT = 0;
@@ -407,7 +416,10 @@ class Game {
     Sound.update();
 
     // Creator intro: keep the title and all gameplay input on hold.
-    if (this.state === 'intro') return;
+    if (this.state === 'intro') {
+      if (Input.hit('start')) this.skipIntro?.();
+      return;
+    }
 
     if (this.state === 'title') {
       if (Input.secret('AHPUCCA')) {
@@ -565,6 +577,7 @@ class Game {
     for (const s of this.shockwaves) s.update(worldDt);
 
     this.stage.update(worldDt, this);
+    this.updateBossRecovery(worldDt);
     this.updateEffects(worldDt);
     this.updateCamera(dt);
     this.updateZone();
@@ -805,6 +818,31 @@ class Game {
     this.banner('¡ZONA DESPEJADA!', 'GO! → AVANZA A LA DERECHA', '#7dffc4', 2.6);
     Sound.sfx('go');
     this.spawnBurst(this.player.x, this.player.y, 20, '#7dffc4');
+  }
+
+  updateBossRecovery(dt) {
+    const boss = this.boss;
+    const player = this.player;
+    if (this.state !== 'playing' || !boss?.alive || !boss.active || !player?.alive) return;
+    if (this.bossRecovery && !this.bossRecovery.dead) return;
+
+    this.bossRecoveryTime -= dt;
+    if (this.bossRecoveryTime > 0 || player.hp >= player.maxHp) return;
+
+    const left = this.minX() + 30;
+    const right = this.maxX() - 30;
+    const distance = rand(105, 180);
+    const toward = Math.random() < 0.5 ? -1 : 1;
+    const preferred = player.x + distance * toward;
+    const alternate = player.x - distance * toward;
+    const suitable = (x) => x >= left && x <= right && Math.abs(x - boss.x) >= 95;
+    const x = suitable(preferred) ? preferred : suitable(alternate) ? alternate : clamp(
+      player.x + (player.x < boss.x ? -distance : distance), left, right,
+    );
+    const y = clamp(player.y + rand(-46, 46), CFG.FLOOR_TOP + 12, CFG.FLOOR_BOTTOM - 12);
+    this.bossRecovery = this.stage.spawnItem(x, y, this.level.bossRecoveryItem, { recovery: true });
+    this.bossRecoveryTime = rand(10, 16);
+    this.ringText('RECUPERA VIDA', x, y - 42, '#7dffc4');
   }
 
   minX() {
@@ -1156,7 +1194,7 @@ class Game {
       ctx.imageSmoothingEnabled = smoothing;
     }
 
-    text(ctx, this.touchMode ? 'Toca para iniciar' : 'Pulsa ENTER para iniciar', CFG.W / 2, CFG.H / 2, 32, '#ffffff', {
+    text(ctx, this.touchMode ? 'Toca para iniciar' : 'ENTER / START para iniciar', CFG.W / 2, CFG.H / 2, 32, '#ffffff', {
       align: 'center',
       baseline: 'middle',
       outline: '#140a18',

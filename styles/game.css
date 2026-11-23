@@ -178,6 +178,38 @@ body {
 }
 
 /* ---------- mobile / touch controls ---------- */
+#touchStart { display: none; }
+
+body.touch.landscape #touchStart:not([hidden]) {
+  display: block;
+  position: fixed;
+  z-index: 31;
+  left: 50%;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  min-height: 44px;
+  padding: 8px 22px;
+  border: 2px solid #ffe66d;
+  border-radius: 8px;
+  background: #160d23;
+  color: #fff0b0;
+  font: 700 14px "Trebuchet MS", sans-serif;
+  touch-action: manipulation;
+}
+
+body.touch.landscape.in-game #touchStart:not([hidden]) {
+  bottom: calc(62px + env(safe-area-inset-bottom));
+}
+
+.joystick-label {
+  position: absolute;
+  inset: auto 0 7px;
+  color: #fff0b0;
+  text-align: center;
+  font: 700 9px "Trebuchet MS", sans-serif;
+  pointer-events: none;
+}
+
 #touch-controls { display: none; }
 
 body.touch.landscape.in-game #touch-controls {

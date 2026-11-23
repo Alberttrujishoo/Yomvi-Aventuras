@@ -21,10 +21,14 @@ import { playCreatorIntro } from './ui/intro.js';
   window.GAME = game;
   TouchControls.init(game);
 
-  const startCreatorIntro = () => playCreatorIntro(() => {
-    game.state = 'title';
-    Input.flush();
-  });
+  const startCreatorIntro = () => {
+    game.skipIntro = playCreatorIntro(() => {
+      game.skipIntro = null;
+      game.state = 'title';
+      Input.flush();
+    });
+  };
+  window.addEventListener('blur', () => game.gamepad.suspend());
 
   const setStatus = (msg, pct) => {
     if (statusEl) statusEl.textContent = msg;

@@ -37,9 +37,12 @@
     <div id="introHint">PULSA UNA TECLA O TOCA LA PANTALLA PARA ACTIVAR EL SONIDO</div>
   </div>
 
-  <div id="touch-controls">
+  <button type="button" id="touchStart" hidden>Iniciar</button>
+
+  <div id="touch-controls" role="group" aria-label="Controles táctiles">
     <div id="joystick" class="joystick" role="group" aria-label="Joystick de movimiento">
-      <div id="joystickKnob" class="joystick-knob"></div>
+      <div id="joystickKnob" class="joystick-knob" aria-hidden="true"></div>
+      <span class="joystick-label" aria-hidden="true">MOVER</span>
     </div>
     <div class="action-cluster">
       <button type="button" class="touch-btn touch-jump" data-action="jump" aria-label="Saltar">SALTO</button>

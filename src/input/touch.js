@@ -6,6 +6,14 @@ import { Input } from './actions.js';
    ============================================================ */
 
 const joystickSource = Symbol('joystick');
+const MENU_LABELS = {
+  title: 'Iniciar',
+  stageselect: 'Seleccionar',
+  briefing: 'Empezar ya',
+  paused: 'Reanudar',
+  continue: 'Continuar',
+  victory: 'Volver al título',
+};
 
 const TouchControls = {
   game: null,
@@ -17,6 +25,7 @@ const TouchControls = {
   active: false,
   intro: false,
   paused: false,
+  menuState: null,
   resetButtons: [],
   dirs: { left: false, right: false, up: false, down: false },
 
@@ -29,19 +38,21 @@ const TouchControls = {
     this.ready = true;
     this.game = game;
 
-    this.isTouch = this.detect();
-
-    document.body.classList.toggle('touch', this.isTouch);
-    game.touchMode = this.isTouch;
-    this.updateOrientation();
+    if (this.detect()) this.enableTouch();
+    else {
+      this.updateOrientation();
+      window.addEventListener('pointerdown', (event) => {
+        if (!this.isTouch && event.pointerType === 'touch') this.enableTouch();
+      }, { capture: true, passive: true });
+    }
 
     window.addEventListener('resize', () => this.updateOrientation());
     window.addEventListener('orientationchange', () => {
       setTimeout(() => this.updateOrientation(), 160);
     });
 
-    if (!this.isTouch) return;
-
+    this.menuButton = document.getElementById('touchStart');
+    this.menuButton.addEventListener('click', () => Input.tap('start'));
     this.joystick = document.getElementById('joystick');
     this.knob = document.getElementById('joystickKnob');
     this.bindJoystick();
@@ -62,6 +73,14 @@ const TouchControls = {
     });
   },
 
+  enableTouch() {
+    this.isTouch = true;
+    this.game.touchMode = true;
+    this.game.lastRenderedState = null;
+    document.body.classList.add('touch');
+    this.updateOrientation();
+  },
+
   updateOrientation() {
     const portrait = window.innerHeight > window.innerWidth;
     if (this.isTouch) {
@@ -74,7 +93,13 @@ const TouchControls = {
 
   sync() {
     if (!this.isTouch) return;
-    const s = this.game && this.game.state;
+    const s = this.game.state;
+    if (s !== this.menuState) {
+      const label = MENU_LABELS[s];
+      this.menuButton.hidden = !label;
+      if (label) this.menuButton.textContent = label;
+      this.menuState = s;
+    }
     const active = s === 'playing' || s === 'paused';
     const paused = s === 'paused';
     if ((this.active && !active) || (paused && !this.paused)) this.releaseAll();
@@ -229,12 +254,9 @@ const TouchControls = {
 
   bindTapToStart() {
     window.addEventListener('pointerdown', (e) => {
-      const t = e.target;
-      if (t && t.closest && (t.closest('#touch-controls') || t.closest('#intro') || t.closest('#rotateHint'))) return;
-      const s = this.game.state;
-      if (s === 'title' || s === 'stageselect' || s === 'briefing' || s === 'continue' || s === 'victory' || s === 'paused') {
-        Input.tap('start');
-      }
+      if (!this.isTouch || this.game.viewBlocked) return;
+      if (e.target?.closest?.('#touch-controls, #touchStart, #intro, #rotateHint')) return;
+      if (MENU_LABELS[this.game.state]) Input.tap('start');
     }, { passive: true });
   },
 };

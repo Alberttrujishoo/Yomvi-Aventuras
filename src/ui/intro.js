@@ -89,6 +89,7 @@ function playCreatorIntro(onFinish) {
   intro.setAttribute('aria-hidden', 'false');
   if (video.error) void tryBufferedVideo();
   else void play(false);
+  return () => finish(0);
 }
 
 export { playCreatorIntro };

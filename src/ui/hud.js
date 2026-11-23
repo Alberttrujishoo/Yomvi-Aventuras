@@ -811,10 +811,10 @@ const HUD = {
       ['ESPECIAL', 'BOTÓN ESP. (GIRO · -12 HP)'],
       ['DASH', 'DOBLE FLICK ← →'],
     ] : [
-      ['MOVER', 'WASD / FLECHAS'],
-      ['GOLPEAR', 'Z / J  (COMBO x3)'],
-      ['SALTAR', 'X / K  (PATADA AÉREA)'],
-      ['ESPECIAL', 'C / L  (GIRO · -12 HP)'],
+      ['MOVER', 'WASD / FLECHAS / STICK'],
+      ['GOLPEAR', 'Z / J · X / CUADRADO'],
+      ['SALTAR', 'X / K · A / CRUZ'],
+      ['ESPECIAL', 'C / L · B / CÍRCULO'],
       ['DASH', 'DOBLE TOQUE ← →'],
     ];
     const rowsR = g.touchMode ? [
@@ -826,7 +826,7 @@ const HUD = {
     ] : [
       ['AGARRE', 'Z JUNTO A ENEMIGO ATURDIDO'],
       ['LANZAR', 'X / K MIENTRAS AGARRA'],
-      ['PAUSA', 'P / ESC'],
+      ['PAUSA', 'P / ESC / START'],
       ['SONIDO', 'M'],
       ['CONSEJO', 'USA EL GIRO SI TE RODEAN'],
     ];
@@ -899,7 +899,7 @@ const HUD = {
     text(ctx, 'PREPÁRATE' + dots, CFG.W / 2, 512, 9, UI.cyan, {
       align: 'center', outlineW: 2, font: FONT_MONO, spacing: 2, alpha: alpha * 0.85,
     });
-    text(ctx, g.touchMode ? 'TOCA PARA INICIAR YA' : 'PULSA ENTER PARA INICIAR YA', CFG.W / 2, 530, 8, '#6f6288', {
+    text(ctx, g.touchMode ? 'TOCA PARA INICIAR YA' : 'ENTER / START PARA INICIAR YA', CFG.W / 2, 530, 8, '#6f6288', {
       align: 'center', outlineW: 2, font: FONT_MONO, spacing: 0.6, alpha: alpha * 0.8,
     });
   },
@@ -1003,7 +1003,7 @@ const HUD = {
     ctx.stroke();
     drawCoinIcon(ctx, CFG.W / 2 - 118, slotY + 22, 12);
     const blink = Math.sin(t * 6) > 0;
-    text(ctx, g.touchMode ? 'TOCA PARA INSERTAR MONEDA' : 'PRESS ENTER TO INSERT COIN', CFG.W / 2 + 14, slotY + 19, 12, blink ? UI.goldHot : UI.green, {
+    text(ctx, g.touchMode ? 'TOCA PARA INSERTAR MONEDA' : 'ENTER / START PARA CONTINUAR', CFG.W / 2 + 14, slotY + 19, 12, blink ? UI.goldHot : UI.green, {
       align: 'center', outlineW: 3, spacing: 1, font: FONT_MONO,
     });
     text(ctx, 'CONTINÚA CON ENERGÍA COMPLETA', CFG.W / 2 + 14, slotY + 34, 8, UI.dim, {
@@ -1140,7 +1140,7 @@ const HUD = {
     });
 
     const blink = Math.sin(t * 4) > -0.1;
-    text(ctx, g.touchMode ? 'TOCA PARA VOLVER AL TÍTULO' : 'PRESS ENTER PARA VOLVER AL TÍTULO', CFG.W / 2, 522, 16, blink ? UI.white : UI.gold, {
+    text(ctx, g.touchMode ? 'TOCA PARA VOLVER AL TÍTULO' : 'ENTER / START PARA VOLVER AL TÍTULO', CFG.W / 2, 522, 16, blink ? UI.white : UI.gold, {
       align: 'center', outlineW: 5, spacing: 2, alpha: blink ? 1 : 0.5,
     });
     ctx.restore();
@@ -1154,7 +1154,7 @@ const HUD = {
       align: 'center', outlineW: 10, outline: '#22101a', spacing: 8,
       shadow: '#a00f31', shadowX: 5, shadowY: 6,
     });
-    text(ctx, g.touchMode ? 'TOCA LA PANTALLA PARA CONTINUAR' : 'P / ESC PARA CONTINUAR', CFG.W / 2, 290, 14, UI.white, {
+    text(ctx, g.touchMode ? 'TOCA LA PANTALLA PARA CONTINUAR' : 'P / ESC / START PARA CONTINUAR', CFG.W / 2, 290, 14, UI.white, {
       align: 'center', outlineW: 3, spacing: 2, font: FONT_MONO,
     });
     text(ctx, 'M: SONIDO ' + (g.muted ? 'OFF' : 'ON'), CFG.W / 2, 322, 11, UI.cyan, {
