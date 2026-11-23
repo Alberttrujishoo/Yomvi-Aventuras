@@ -32,6 +32,7 @@ const LEVELS = {
     track: 'level',
     music: ['mall.mp3'],
     bossSheet: 'arthas.jpg',
+    bossRecoveryItem: 'pastelito',
   },
   2: {
     boss: Boss2,
@@ -55,6 +56,7 @@ const LEVELS = {
     track: 'level2',
     music: ['hospital.mp3', 'hospital-original.mp3'],
     bossSheet: 'cryptocino.jpg',
+    bossRecoveryItem: 'firstaid',
   },
   3: {
     boss: Boss3,
@@ -78,6 +80,7 @@ const LEVELS = {
     track: 'level3',
     music: ['street.mp3'],
     bossSheet: 'gaytelos.jpg',
+    bossRecoveryItem: 'burger',
   },
 };
 

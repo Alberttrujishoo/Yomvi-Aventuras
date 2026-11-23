@@ -1,10 +1,21 @@
+const CHARGE_SECONDS = 0.65;
+
+const START_SCREEN_LABELS = new Map([
+  ['title', 'Iniciar'],
+  ['stageselect', 'Seleccionar'],
+  ['briefing', 'Empezar ya'],
+  ['paused', 'Reanudar'],
+  ['continue', 'Continuar'],
+  ['victory', 'Volver al título'],
+]);
+
 const ACTIONS = {
   left: ['ArrowLeft', 'KeyA'],
   right: ['ArrowRight', 'KeyD'],
   up: ['ArrowUp', 'KeyW'],
   down: ['ArrowDown', 'KeyS'],
   attack: ['KeyZ', 'KeyJ'],
-  jump: ['KeyX', 'KeyK'],
+  jump: ['KeyK'],
   special: ['KeyC', 'KeyL'],
   start: ['Enter', 'NumpadEnter', 'KeyZ'],
   stage1: ['Digit1', 'Numpad1'],
@@ -24,6 +35,7 @@ for (const [action, bindings] of Object.entries(ACTIONS)) {
 
 function createInput() {
   const held = new Map();
+  const charging = new Map();
   const pressed = new Set();
   const lastTap = new Map();
   const keys = new Set();
@@ -41,11 +53,13 @@ function createInput() {
         if (e.repeat || keys.has(e.code)) return;
         keys.add(e.code);
         if (/^[a-z]$/i.test(e.key)) typed = (typed + e.key.toUpperCase()).slice(-24);
+        if (e.code === 'KeyX') this.beginCharge(e.code, 'jump');
         for (const action of actions ?? []) this.press(action, e.code);
       }, { passive: false });
 
       target.addEventListener('keyup', (e) => {
         keys.delete(e.code);
+        if (e.code === 'KeyX') this.releaseCharge(e.code);
         for (const action of codes.get(e.code) ?? []) this.release(action, e.code);
       });
 
@@ -83,6 +97,29 @@ function createInput() {
       if (!sources.size) held.delete(action);
     },
 
+    beginCharge(source, tapAction) {
+      charging.set(source, { tapAction, time: 0 });
+    },
+
+    releaseCharge(source, completed = true) {
+      const charge = charging.get(source);
+      if (!charge) return;
+      charging.delete(source);
+      if (completed) this.tap(charge.time >= CHARGE_SECONDS ? 'chargedAttack' : charge.tapAction);
+    },
+
+    updateCharges(dt) {
+      for (const charge of charging.values()) charge.time = Math.min(CHARGE_SECONDS, charge.time + dt);
+    },
+
+    chargeProgress() {
+      let progress = 0;
+      for (const charge of charging.values()) progress = Math.max(progress, charge.time / CHARGE_SECONDS);
+      return progress;
+    },
+
+    cancelCharges() { charging.clear(); },
+
     tap(action) {
       pressed.add(action);
       this.anyKey = true;
@@ -108,6 +145,7 @@ function createInput() {
     clear() {
       this.flush();
       held.clear();
+      this.cancelCharges();
       keys.clear();
       lastTap.clear();
     },
@@ -116,4 +154,4 @@ function createInput() {
 
 const Input = createInput();
 
-export { Input, createInput };
+export { Input, START_SCREEN_LABELS, createInput };

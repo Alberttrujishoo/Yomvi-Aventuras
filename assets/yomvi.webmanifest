@@ -1,0 +1,9 @@
+{
+  "name": "Yomvi Adventures",
+  "short_name": "Yomvi",
+  "start_url": "../",
+  "scope": "../",
+  "display": "standalone",
+  "background_color": "#06040c",
+  "theme_color": "#06040c"
+}

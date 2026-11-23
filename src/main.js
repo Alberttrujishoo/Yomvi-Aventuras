@@ -4,6 +4,7 @@ import { Input } from './input/actions.js';
 import { TouchControls } from './input/touch.js';
 import { Assets } from './media/assets.js';
 import { Sound } from './media/audio.js';
+import { initFullscreen } from './ui/fullscreen.js';
 import { playCreatorIntro } from './ui/intro.js';
 
 /* ============================================================
@@ -19,13 +20,23 @@ import { playCreatorIntro } from './ui/intro.js';
   Sound.loadCoinSfx();
 
   const game = new Game(canvas, { compact: TouchControls.detect() });
+  const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const syncMotion = () => { game.reducedMotion = motion.matches; };
+  syncMotion();
+  motion.addEventListener('change', syncMotion);
   window.GAME = game;
   TouchControls.init(game);
 
-  const startCreatorIntro = () => playCreatorIntro(() => {
-    game.state = 'title';
-    Input.flush();
-  });
+  const startCreatorIntro = () => {
+    game.skipIntro = playCreatorIntro(() => {
+      game.skipIntro = null;
+      game.state = 'title';
+      Input.flush();
+      initFullscreen();
+    });
+  };
+  window.addEventListener('blur', () => game.gamepad.setFocused(false));
+  window.addEventListener('focus', () => game.gamepad.setFocused(true));
 
   const setStatus = (msg, pct) => {
     if (statusEl) statusEl.textContent = msg;
@@ -45,6 +56,8 @@ import { playCreatorIntro } from './ui/intro.js';
   document.addEventListener('visibilitychange', syncVisibility);
   syncVisibility();
 
+  void Assets.loadSpecialEffect();
+  void Assets.loadFerozCameo();
   Assets.loadTitle(setStatus).then(() => {
     game.applyAssets();
     game.muted = Sound.muted;

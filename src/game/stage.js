@@ -80,20 +80,23 @@ class Stage {
     });
   }
 
-  spawnItem(x, y, forcedType = null) {
+  spawnItem(x, y, forcedType = null, { recovery = false } = {}) {
     const type = forcedType || choice(this.scenery.itemPool);
-    this.items.push({
+    const item = {
       type,
+      recovery,
       def: PICKUPS[type],
       x,
       y,
       z: 14,
       vz: 120,
       seed: rand(0, TAU),
-      life: 26,
+      life: recovery ? 14 : 26,
       dead: false,
       justSpawned: 0,
-    });
+    };
+    this.items.push(item);
+    return item;
   }
 
   breakProp(prop, game) {
@@ -139,13 +142,14 @@ class Stage {
         it.vz = Math.abs(it.vz) > 60 ? -it.vz * 0.45 : 0;
       }
       const pl = game.player;
-      if (pl && pl.alive && Math.abs(pl.x - it.x) < 30 && Math.abs(pl.y - it.y) < 26 && it.z < 30) {
+      if (pl?.alive && (!it.recovery || pl.hp < pl.maxHp) &&
+          Math.abs(pl.x - it.x) < 30 && Math.abs(pl.y - it.y) < 26 && it.z < 30) {
         it.dead = true;
         pl.heal(it.def.heal);
         Sound.sfx('heal');
         game.spawnSparks(it.x, it.y - 20, 0, 8, 'heal');
         game.ringText(it.def.label, it.x, it.y - 40, '#7dffc4');
-        game.addScore(it.def.score, it.x, it.y - 60);
+        if (!it.recovery) game.addScore(it.def.score, it.x, it.y - 60);
       }
       if (it.life <= 0) it.dead = true;
     }

@@ -708,6 +708,21 @@ class AudioEngine {
         this.noise(0.38, 0.12, 'highpass', 900, 4200);
         this.chord([60, 64, 67, 72], 0.4, 'square', 0.03, 0.05);
         break;
+      case 'ferozCameo': {
+        if (this.muted) break;
+        // Heavenis57drum.mid, 30.95–31.58 s: six tom hits in triplets into a kick and crash.
+        const triplet = 60 / 190 / 3;
+        const toms = [190, 190, 190, 145, 145, 145];
+        for (const [index, frequency] of toms.entries()) {
+          const delay = index * triplet;
+          this.tone(frequency, 0.12, 'sine', 0.27, frequency * 0.62, delay);
+          this.noise(0.04, 0.08, 'bandpass', 950, null, delay);
+        }
+        const accent = toms.length * triplet;
+        this.tone(118, 0.15, 'sine', 0.28, 48, accent);
+        this.noise(0.36, 0.19, 'highpass', 4100, 2500, accent);
+        break;
+      }
       case 'enemyDie':
         this.tone(340, 0.28, 'square', 0.11, 55);
         this.noise(0.26, 0.16, 'lowpass', 2600, 200);

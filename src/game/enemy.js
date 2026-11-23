@@ -406,8 +406,7 @@ class Enemy {
   }
 
   takeHit(dmg, dir, o = {}) {
-    if (!this.alive || this.state === 'dying') return;
-    if (this.state === 'thrown' && o.isGrabHit) return;
+    if (!this.alive || this.state === 'dying' || (this.state === 'thrown' && o.isGrabHit)) return false;
 
     this.hp -= dmg;
     this.flash = 0.12;
@@ -420,12 +419,12 @@ class Enemy {
 
     if (this.hp <= 0) {
       this.die(dir);
-      return;
+      return true;
     }
 
     if (this.state === 'grabbed') {
       // stay held, just wobble
-      return;
+      return true;
     }
 
     if (o.knock >= 230 || o.heavy) {
@@ -443,6 +442,7 @@ class Enemy {
       this.vy = 0;
       this.releaseSlot();
     }
+    return true;
   }
 
   die(dir) {

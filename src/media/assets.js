@@ -371,6 +371,8 @@ function bakeFrame(img, rect, targetH = 300) {
 const Assets = {
   hero: null,
   mainScreen: null,
+  specialEffect: null,
+  ferozCameo: null,
   bosses: new Map(),
 
   async loadTitle(onStatus) {
@@ -380,6 +382,14 @@ const Assets = {
       loadImage('cover.jpg'),
     ]);
     onStatus('¡LISTO!', 100);
+  },
+
+  async loadSpecialEffect() {
+    this.specialEffect = await loadImage('special-effect.webp');
+  },
+
+  async loadFerozCameo() {
+    this.ferozCameo = await loadImage('feroz-cameo.webp');
   },
 
   loadBoss(stageId, filename) {

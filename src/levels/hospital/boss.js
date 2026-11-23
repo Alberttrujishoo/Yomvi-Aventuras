@@ -136,7 +136,6 @@ class Boss2 {
     this.hp = this.maxHp;
     this.layerSize = 160;
     this.bossName = 'CRYPTOCINO';
-    this.bossSub = '';
     this.state = 'intro';
     this.stateT = 0;
     this.animT = 0;
@@ -484,7 +483,7 @@ class Boss2 {
   }
 
   takeHit(dmg, dir, o = {}) {
-    if (!this.alive || this.state === 'dead' || this.state === 'intro') return;
+    if (!this.alive || this.state === 'dead' || this.state === 'intro') return false;
     this.hp -= dmg;
     this.flash = 0.11;
     this.game.spawnSparks(this.x, this.y, this.z + 100, o.heavy ? 9 : 4, 'hit');
@@ -493,12 +492,12 @@ class Boss2 {
 
     if (this.hp <= 0) {
       this.die();
-      return;
+      return true;
     }
 
     if (!this.enraged && this.hp <= this.maxHp * 0.5) {
       this.enrage();
-      return;
+      return true;
     }
 
     if (o.heavy && this.state !== 'dash' && this.state !== 'spin' && this.state !== 'leapWind') {
@@ -506,6 +505,7 @@ class Boss2 {
       this.stateT = 0;
       this.vx = dir * 110;
     }
+    return true;
   }
 
   enrage() {

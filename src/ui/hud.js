@@ -1,6 +1,7 @@
 import { drawPortrait, drawSprite } from '../media/sprite-renderer.js';
 import { FONT_MONO, drawShadow, roundRectPath, text } from '../engine/canvas.js';
 import { CFG, TAU, clamp, padScore } from '../engine/math.js';
+import { drawFerozCameo } from './feroz-cameo.js';
 import { stageClear } from './stage-clear.js';
 
 /* ============================================================
@@ -20,6 +21,17 @@ const UI = {
   black: '#0a0712',
   panel: '#160f26',
 };
+
+const BOSS_BAR = { x: 374, y: 72, width: 376, height: 24 };
+const BOSS_LIFE_COLORS = [
+  ['#ffcb62', '#dc862c'],
+  ['#ffba49', '#d97429'],
+  ['#ff629d', '#c12c62'],
+];
+
+function hasBossBar(g) {
+  return g.boss?.active && g.boss.alive && !g.bossDefeated;
+}
 
 function drawHeart(ctx, x, y, s, color) {
   ctx.save();
@@ -177,11 +189,6 @@ const HUD = {
       text(ctx, 'SONIDO OFF [M]', 796, 53, 8, UI.red, { align: 'right', font: FONT_MONO, outlineW: 2 });
     }
 
-    /* ---------------- boss bar ---------------- */
-    if (g.boss && g.boss.active && g.boss.alive && g.bossDefeated === false) {
-      this.drawBossBar(ctx, g);
-    }
-
     /* ---------------- wave / combo ---------------- */
     if (g.lockActive) {
       let label;
@@ -262,6 +269,7 @@ const HUD = {
     /* ---------------- level up / banner ---------------- */
     if (g.levelMsg) this.drawLevelUp(ctx, g);
     else if (g.bannerData && g.bannerData.t > 0) this.drawBanner(ctx, g);
+    if (hasBossBar(g)) this.drawBossBar(ctx, g);
 
     /* ---------------- damage vignette ---------------- */
     if (g.damageFlash > 0) {
@@ -286,75 +294,55 @@ const HUD = {
       ctx.fillRect(0, 514, CFG.W, 26);
       ctx.fillStyle = 'rgba(255, 209, 102, 0.28)';
       ctx.fillRect(0, 514, CFG.W, 1);
-      text(ctx, 'WASD/FLECHAS MOVER   ·   Z/J GOLPEAR   ·   X/K SALTAR · PATADA AÉREA   ·   C/L GIRO (-12HP)   ·   DOBLE TOQUE DASH   ·   P PAUSA   ·   M SONIDO', 14, 532, 9, '#b9a8d0', {
+      text(ctx, 'WASD / FLECHAS MOVER   ·   Z GOLPE   ·   X SALTO / MANTÉN X PARA CARGAR   ·   C ESPECIAL   ·   P PAUSA   ·   M SONIDO', 14, 532, 9, '#b9a8d0', {
         font: FONT_MONO, outlineW: 2, spacing: 0.3,
       });
     }
   },
 
+  drawFerozCameo(ctx, g) {
+    const minimumTop = hasBossBar(g) ? BOSS_BAR.y + BOSS_BAR.height + 6 : 0;
+    drawFerozCameo(ctx, g.ferozCameoAge, g.reducedMotion, minimumTop);
+  },
+
   drawBossBar(ctx, g) {
-    const b = g.boss;
-    const bx = 210, by = 72, bw = 540;
+    const boss = g.boss;
+    const { x, y, width, height } = BOSS_BAR;
+    const labelY = y + height / 2;
     ctx.save();
-    // panel
-    ctx.fillStyle = 'rgba(10, 5, 16, 0.92)';
-    roundRectPath(ctx, bx, by, bw, 52, 5);
-    ctx.fill();
-    ctx.strokeStyle = b.enraged ? UI.red : '#63243f';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.fillStyle = b.enraged ? 'rgba(255,46,99,0.18)' : 'rgba(120, 40, 70, 0.14)';
-    roundRectPath(ctx, bx + 2, by + 2, bw - 4, 48, 4);
-    ctx.fill();
 
-    // label
-    const bossName = b.bossName || 'ARTHAS';
-    const bossSub = b.bossSub !== undefined ? b.bossSub : '- JORGE SALINAS';
-    text(ctx, bossName, bx + 14, by + 18, 15, UI.goldHot, {
-      outlineW: 4, spacing: 1.5, shadow: UI.red, shadowX: 2, shadowY: 2,
+    text(ctx, boss.bossName, x - 70, labelY, 18, UI.goldHot, {
+      align: 'right', baseline: 'middle', outlineW: 5, spacing: 0.6,
     });
-    if (bossSub) {
-      text(ctx, bossSub, bx + 96, by + 18, 15, UI.white, { outlineW: 4, spacing: 0.5 });
-    }
-    if (b.enraged) {
-      const a = Math.sin(g.time * 10) > 0 ? 1 : 0.35;
-      text(ctx, 'ENFURECIDO', bx + bw - 14, by + 17, 11, UI.red, {
-        align: 'right', outlineW: 3, spacing: 1, alpha: a,
-      });
-    } else {
-      text(ctx, 'JEFE FINAL', bx + bw - 14, by + 17, 9, UI.pink, {
-        align: 'right', outlineW: 2, font: FONT_MONO, spacing: 1,
-      });
-    }
+    text(ctx, boss.enraged ? 'FASE 2' : 'FASE 1', x - 62, labelY, 13, boss.enraged ? UI.pink : UI.white, {
+      baseline: 'middle', outlineW: 4, font: FONT_MONO,
+    });
 
-    // three stacked life layers
-    const lx = bx + 14, lw = bw - 28;
-    const layerH = 6, gap = 3;
-    const layerMax = b.layerSize;
-    for (let i = 0; i < 3; i++) {
-      // i=0 bottom (0..140), i=1 middle, i=2 top
-      const frac = clamp((b.hp - i * layerMax) / layerMax, 0, 1);
-      const y = by + 26 + (2 - i) * (layerH + gap);
-      ctx.fillStyle = '#260c16';
-      ctx.fillRect(lx, y, lw, layerH);
-      ctx.fillStyle = '#14070d';
-      ctx.fillRect(lx + 1, y + 1, lw - 2, layerH - 2);
-      if (frac > 0) {
-        const colors = ['#ffe066', '#ff8a3d', '#ff2e63'];
-        const grad = ctx.createLinearGradient(lx, y, lx, y + layerH);
-        grad.addColorStop(0, colors[i]);
-        grad.addColorStop(1, i === 2 ? '#b3163f' : i === 1 ? '#b75416' : '#b3911f');
-        ctx.fillStyle = grad;
-        ctx.fillRect(lx, y, lw * frac, layerH);
-        ctx.fillStyle = 'rgba(255,255,255,0.45)';
-        ctx.fillRect(lx, y, lw * frac, 1);
-        // hazard tick at the layer edge
-        ctx.fillStyle = 'rgba(255,255,255,0.5)';
-        ctx.fillRect(lx + lw * frac - 1, y, 2, layerH);
-      }
-      // tick divisions
-      ctx.fillStyle = 'rgba(0,0,0,0.35)';
-      for (let s = 1; s < 8; s++) ctx.fillRect(lx + (lw / 8) * s, y, 1, layerH);
+    ctx.fillStyle = '#110a14';
+    roundRectPath(ctx, x, y, width, height, 6);
+    ctx.fill();
+    ctx.strokeStyle = boss.enraged ? UI.pink : '#a13051';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    const inset = 6;
+    const gap = 4;
+    const segmentCount = BOSS_LIFE_COLORS.length;
+    const segmentWidth = (width - inset * 2 - gap * (segmentCount - 1)) / segmentCount;
+    const segmentHeight = height - inset * 2;
+    const segmentY = y + inset;
+    for (const [index, [highlight, base]] of BOSS_LIFE_COLORS.entries()) {
+      const segmentX = x + inset + index * (segmentWidth + gap);
+      const fraction = clamp(boss.hp / boss.layerSize - index, 0, 1);
+      ctx.fillStyle = '#361827';
+      ctx.fillRect(segmentX, segmentY, segmentWidth, segmentHeight);
+      if (fraction <= 0) continue;
+
+      const fill = ctx.createLinearGradient(0, segmentY, 0, segmentY + segmentHeight);
+      fill.addColorStop(0, highlight);
+      fill.addColorStop(1, base);
+      ctx.fillStyle = fill;
+      ctx.fillRect(segmentX, segmentY, segmentWidth * fraction, segmentHeight);
     }
     ctx.restore();
   },
@@ -807,14 +795,14 @@ const HUD = {
     const rowsL = g.touchMode ? [
       ['MOVER', 'JOYSTICK IZQUIERDO'],
       ['GOLPEAR', 'BOTÓN GOLPE (COMBO x3)'],
-      ['SALTAR', 'BOTÓN SALTO (PATADA AÉREA)'],
-      ['ESPECIAL', 'BOTÓN ESP. (GIRO · -12 HP)'],
+      ['SALTAR', 'SALTO / PATADA AÉREA'],
+      ['ESPECIAL', 'ESP. (GIRO · -12 HP)'],
       ['DASH', 'DOBLE FLICK ← →'],
     ] : [
-      ['MOVER', 'WASD / FLECHAS'],
-      ['GOLPEAR', 'Z / J  (COMBO x3)'],
-      ['SALTAR', 'X / K  (PATADA AÉREA)'],
-      ['ESPECIAL', 'C / L  (GIRO · -12 HP)'],
+      ['MOVER', 'WASD / FLECHAS / STICK'],
+      ['GOLPEAR', 'Z / J · X / CUADRADO'],
+      ['SALTAR', 'X / K · A / CRUZ'],
+      ['ESPECIAL', 'C / L · B / CÍRCULO'],
       ['DASH', 'DOBLE TOQUE ← →'],
     ];
     const rowsR = g.touchMode ? [
@@ -822,30 +810,30 @@ const HUD = {
       ['LANZAR', 'SALTO MIENTRAS AGARRA'],
       ['PAUSA', 'BOTÓN II'],
       ['SONIDO', 'VOLUMEN DEL DISPOSITIVO'],
-      ['CONSEJO', 'USA EL GIRO SI TE RODEAN'],
+      ['CARGADO', 'MANTÉN GOLPE Y SUELTA'],
     ] : [
       ['AGARRE', 'Z JUNTO A ENEMIGO ATURDIDO'],
       ['LANZAR', 'X / K MIENTRAS AGARRA'],
-      ['PAUSA', 'P / ESC'],
+      ['PAUSA', 'P / ESC / START'],
       ['SONIDO', 'M'],
-      ['CONSEJO', 'USA EL GIRO SI TE RODEAN'],
+      ['CARGADO', 'MANTÉN X / CUADRADO'],
     ];
 
     rowsL.forEach((row, i) => {
       const y = 215 + i * 25;
-      text(ctx, row[0], 156, y, 9.5, UI.gold, {
+      text(ctx, row[0], 156, y, 12, UI.gold, {
         outlineW: 2, font: FONT_MONO, spacing: 0.8, alpha,
       });
-      text(ctx, row[1], 286, y, 9.5, '#e4dcf2', {
+      text(ctx, row[1], 286, y, 12, '#e4dcf2', {
         outlineW: 2, font: FONT_MONO, spacing: 0.4, alpha,
       });
     });
     rowsR.forEach((row, i) => {
       const y = 215 + i * 25;
-      text(ctx, row[0], 516, y, 9.5, UI.gold, {
+      text(ctx, row[0], 516, y, 12, UI.gold, {
         outlineW: 2, font: FONT_MONO, spacing: 0.8, alpha,
       });
-      text(ctx, row[1], 630, y, 9.5, '#e4dcf2', {
+      text(ctx, row[1], 630, y, 12, '#e4dcf2', {
         outlineW: 2, font: FONT_MONO, spacing: 0.4, alpha,
       });
     });
@@ -899,9 +887,11 @@ const HUD = {
     text(ctx, 'PREPÁRATE' + dots, CFG.W / 2, 512, 9, UI.cyan, {
       align: 'center', outlineW: 2, font: FONT_MONO, spacing: 2, alpha: alpha * 0.85,
     });
-    text(ctx, g.touchMode ? 'TOCA PARA INICIAR YA' : 'PULSA ENTER PARA INICIAR YA', CFG.W / 2, 530, 8, '#6f6288', {
-      align: 'center', outlineW: 2, font: FONT_MONO, spacing: 0.6, alpha: alpha * 0.8,
-    });
+    if (!g.touchMode) {
+      text(ctx, 'ENTER / START PARA INICIAR YA', CFG.W / 2, 530, 8, '#6f6288', {
+        align: 'center', outlineW: 2, font: FONT_MONO, spacing: 0.6, alpha: alpha * 0.8,
+      });
+    }
   },
 
   /* ==========================================================
@@ -1003,7 +993,7 @@ const HUD = {
     ctx.stroke();
     drawCoinIcon(ctx, CFG.W / 2 - 118, slotY + 22, 12);
     const blink = Math.sin(t * 6) > 0;
-    text(ctx, g.touchMode ? 'TOCA PARA INSERTAR MONEDA' : 'PRESS ENTER TO INSERT COIN', CFG.W / 2 + 14, slotY + 19, 12, blink ? UI.goldHot : UI.green, {
+    text(ctx, g.touchMode ? 'TOCA PARA CONTINUAR' : 'ENTER / START', CFG.W / 2 + 14, slotY + 19, 12, blink ? UI.goldHot : UI.green, {
       align: 'center', outlineW: 3, spacing: 1, font: FONT_MONO,
     });
     text(ctx, 'CONTINÚA CON ENERGÍA COMPLETA', CFG.W / 2 + 14, slotY + 34, 8, UI.dim, {
@@ -1140,7 +1130,7 @@ const HUD = {
     });
 
     const blink = Math.sin(t * 4) > -0.1;
-    text(ctx, g.touchMode ? 'TOCA PARA VOLVER AL TÍTULO' : 'PRESS ENTER PARA VOLVER AL TÍTULO', CFG.W / 2, 522, 16, blink ? UI.white : UI.gold, {
+    text(ctx, g.touchMode ? 'TOCA PARA VOLVER AL TÍTULO' : 'ENTER / START PARA VOLVER AL TÍTULO', CFG.W / 2, 522, 16, blink ? UI.white : UI.gold, {
       align: 'center', outlineW: 5, spacing: 2, alpha: blink ? 1 : 0.5,
     });
     ctx.restore();
@@ -1154,7 +1144,7 @@ const HUD = {
       align: 'center', outlineW: 10, outline: '#22101a', spacing: 8,
       shadow: '#a00f31', shadowX: 5, shadowY: 6,
     });
-    text(ctx, g.touchMode ? 'TOCA LA PANTALLA PARA CONTINUAR' : 'P / ESC PARA CONTINUAR', CFG.W / 2, 290, 14, UI.white, {
+    text(ctx, g.touchMode ? 'TOCA LA PANTALLA PARA CONTINUAR' : 'P / ESC / START PARA CONTINUAR', CFG.W / 2, 290, 14, UI.white, {
       align: 'center', outlineW: 3, spacing: 2, font: FONT_MONO,
     });
     text(ctx, 'M: SONIDO ' + (g.muted ? 'OFF' : 'ON'), CFG.W / 2, 322, 11, UI.cyan, {

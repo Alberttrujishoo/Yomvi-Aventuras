@@ -45,3 +45,29 @@ test('a real double tap still dashes and blur clears keyboard and touch', () => 
   assert.equal(input.down('attack'), false);
   assert.equal(input.hit('attack'), false);
 });
+
+test('keyboard X jumps on a tap and charges only after a full hold', () => {
+  const { input, key, target } = keyboard();
+  key('keydown', 'KeyX', 'x');
+  assert.equal(input.hit('jump'), false);
+  input.updateCharges(0.1);
+  key('keyup', 'KeyX', 'x');
+  assert.equal(input.hit('jump'), true);
+  assert.equal(input.hit('chargedAttack'), false);
+
+  input.endFrame();
+  key('keydown', 'KeyX', 'x');
+  input.updateCharges(0.67);
+  assert.equal(input.chargeProgress(), 1);
+  key('keyup', 'KeyX', 'x');
+  assert.equal(input.hit('chargedAttack'), true);
+  assert.equal(input.hit('jump'), false);
+
+  input.endFrame();
+  key('keydown', 'KeyX', 'x');
+  input.updateCharges(0.7);
+  target.dispatchEvent(new Event('blur'));
+  key('keyup', 'KeyX', 'x');
+  assert.equal(input.chargeProgress(), 0);
+  assert.equal(input.hit('chargedAttack'), false);
+});

@@ -76,8 +76,9 @@ class RoxyBurgerShot {
     for (const e of g.enemies.slice()) {
       if (!e.alive || e.state === 'dying') continue;
       if (Math.abs(e.y - this.y) < 32 && (e.x - this.x) * this.dir > -20 && Math.abs(e.x - this.x) < 34 && zDiff(e) < 76) {
-        e.takeHit(this.dmg, this.dir, { knock: 240, heavy: false, source: this.owner });
-        this.owner.registerHit(this.dmg, false);
+        if (e.takeHit(this.dmg, this.dir, { knock: 240, heavy: false, source: this.owner })) {
+          this.owner.registerHit(this.dmg, false);
+        }
         this.impact();
         this.dead = true;
         return;
@@ -87,8 +88,9 @@ class RoxyBurgerShot {
     const boss = g.boss;
     if (boss && boss.alive && boss.active &&
         Math.abs(boss.y - this.y) < 38 && (boss.x - this.x) * this.dir > -20 && Math.abs(boss.x - this.x) < 42 && zDiff(boss) < 80) {
-      boss.takeHit(this.dmg, this.dir, { knock: 220, heavy: false });
-      this.owner.registerHit(this.dmg, false);
+      if (boss.takeHit(this.dmg, this.dir, { knock: 220, heavy: false })) {
+        this.owner.registerHit(this.dmg, false);
+      }
       this.impact();
       this.dead = true;
       return;
@@ -174,7 +176,7 @@ class RoxyFallingBurger {
     for (const e of g.enemies.slice()) {
       if (!e.alive || e.state === 'dying') continue;
       if (Math.abs(e.x - this.x) < 54 && Math.abs(e.y - this.y) < 42) {
-        e.takeHit(this.dmg, sign(e.x - this.x) || 1, { knock: 280, heavy: true, source: this.owner });
+        if (!e.takeHit(this.dmg, sign(e.x - this.x) || 1, { knock: 280, heavy: true, source: this.owner })) continue;
         if (p) p.registerHit(this.dmg, true);
         didHit = true;
       }
@@ -183,9 +185,10 @@ class RoxyFallingBurger {
     const boss = g.boss;
     if (boss && boss.alive && boss.active &&
         Math.abs(boss.x - this.x) < 62 && Math.abs(boss.y - this.y) < 46) {
-      boss.takeHit(this.dmg, sign(boss.x - this.x) || 1, { knock: 220, heavy: false });
-      if (p) p.registerHit(this.dmg, true);
-      didHit = true;
+      if (boss.takeHit(this.dmg, sign(boss.x - this.x) || 1, { knock: 220, heavy: false })) {
+        if (p) p.registerHit(this.dmg, true);
+        didHit = true;
+      }
     }
 
     for (const prop of g.stage.props) {

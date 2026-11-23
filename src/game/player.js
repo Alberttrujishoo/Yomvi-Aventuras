@@ -1,16 +1,19 @@
 import { drawSprite } from '../media/sprite-renderer.js';
-import { drawShadow } from '../engine/canvas.js';
+import { drawShadow, text } from '../engine/canvas.js';
 import { CFG, approach, chance, clamp, rand, sign } from '../engine/math.js';
 import { Particle } from '../engine/particle.js';
 import { Input } from '../input/actions.js';
 import { Sound } from '../media/audio.js';
 import { RoxyBurgerShot, RoxyFallingBurger } from './roxy.js';
+import { SpecialEffect } from './special-effect.js';
 
+const CHARGED_ATTACK = 4;
 const PLAYER_ATTACKS = [
   { dur: 0.27, hitAt: 0.095, dmg: 6, reach: 67, knock: 80, hitstop: 0.02, sound: 'punch1', heavy: false, frame: 0 },
   { dur: 0.29, hitAt: 0.105, dmg: 8, reach: 72, knock: 110, hitstop: 0.025, sound: 'punch2', heavy: false, frame: 1 },
   { dur: 0.50, hitAt: 0.20, dmg: 17, reach: 89, knock: 340, hitstop: 0.04, sound: 'heavy', heavy: true, frame: 2 },
   { dur: 0.34, hitAt: 0.10, dmg: 13, reach: 91, knock: 300, hitstop: 0.04, sound: 'heavy', heavy: true, frame: 2 },
+  { dur: 0.6, hitAt: 0.16, dmg: 30, reach: 121, knock: 430, hitstop: 0.06, sound: 'heavy', heavy: true, frame: 2 },
 ];
 
 class Player {
@@ -38,7 +41,7 @@ class Player {
     this.invuln = 1.2;
     this.flash = 0;
     this.squash = 1;
-    this.buffer = { attack: 0, jump: 0, special: 0 };
+    this.buffer = { attack: 0, chargedAttack: false, jump: 0, special: 0 };
     this.attackIndex = 0;
     this.attackT = 0;
     this.attackHit = new Set();
@@ -50,6 +53,7 @@ class Player {
     this.dashUsed = false;
     this.specialT = 0;
     this.specialTick = 0;
+    this.specialEffect = null;
     this.downT = 0;
     this.deadT = 0;
     this.alive = true;
@@ -63,6 +67,7 @@ class Player {
   }
 
   captureInput() {
+    if (this.alive && Input.hit('chargedAttack')) this.buffer.chargedAttack = true;
     if (Input.hit('attack')) this.buffer.attack = 0.24;
     if (Input.hit('jump')) this.buffer.jump = 0.16;
     if (Input.hit('special')) this.buffer.special = 0.2;
@@ -108,6 +113,7 @@ class Player {
   }
 
   update(dt) {
+    if (this.specialEffect && !this.specialEffect.update(dt)) this.specialEffect = null;
     this.stateT += dt;
     this.tickBuffers(dt);
     this.invuln = Math.max(0, this.invuln - dt);
@@ -282,7 +288,11 @@ class Player {
       this.animT += dt;
     }
 
-    // dropped-item pickup is handled by the stage
+    if (this.buffer.chargedAttack) {
+      this.buffer.chargedAttack = false;
+      this.startAttack(CHARGED_ATTACK);
+      return;
+    }
 
     if (this.buffer.special > 0) {
       if (this.hp > this.getSpecialCost()) {
@@ -380,7 +390,9 @@ class Player {
     const a = PLAYER_ATTACKS[this.attackIndex];
     this.attackT += dt;
 
-    if (this.attackIndex === 3) {
+    if (this.attackIndex === CHARGED_ATTACK) {
+      this.x += this.facing * 275 * dt * Math.max(0, 1 - this.attackT / a.hitAt);
+    } else if (this.attackIndex === 3) {
       this.x += this.facing * 420 * dt * Math.max(0, 1 - this.attackT / 0.2);
     } else if (this.attackT < 0.09) {
       this.x += this.facing * 70 * dt;
@@ -413,7 +425,7 @@ class Player {
     const dmg = a.dmg * this.attackMul;
 
     // slash visual
-    g.addSlash(this.x + dir * 31, this.y, attackY + 74, dir, index === 2 || index === 3);
+    g.addSlash(this.x + dir * 31, this.y, attackY + 74, dir, a.heavy);
     Sound.sfx(a.sound);
 
     let didHit = false;
@@ -435,7 +447,7 @@ class Player {
       if (this.attackHit.has(e)) continue;
       if (hitTarget(e)) {
         this.attackHit.add(e);
-        e.takeHit(dmg, dir, { knock: a.knock, heavy: a.heavy, source: this });
+        if (!e.takeHit(dmg, dir, { knock: a.knock, heavy: a.heavy, source: this })) continue;
         didHit = true;
         this.registerHit(dmg, a.heavy);
       }
@@ -445,9 +457,10 @@ class Player {
     if (boss && boss.alive && boss.active && !this.attackHit.has(boss)) {
       if (Math.abs(boss.y - this.y) < 34 && (boss.x - this.x) * dir > -34 && (boss.x - this.x) * dir < a.reach + 34 && Math.abs(boss.z - attackY) < 70) {
         this.attackHit.add(boss);
-        boss.takeHit(dmg, dir, { knock: a.knock, heavy: a.heavy });
-        didHit = true;
-        this.registerHit(dmg, a.heavy);
+        if (boss.takeHit(dmg, dir, { knock: a.knock, heavy: a.heavy })) {
+          didHit = true;
+          this.registerHit(dmg, a.heavy);
+        }
       }
     }
 
@@ -494,6 +507,7 @@ class Player {
     if (this.comboCount >= 3) {
       this.game.comboFlash = 1;
     }
+    if (this.comboCount === 5) this.game.showFerozCameo();
   }
 
   updateAirAttack(dt) {
@@ -510,7 +524,7 @@ class Player {
       for (const e of g.enemies.slice()) {
         if (!e.alive) continue;
         if (Math.abs(e.y - this.y) < 30 && (e.x - this.x) * dir > -18 && (e.x - this.x) * dir < 86 && Math.abs(e.z - this.z) < 62) {
-          e.takeHit(dmg, dir, { knock: 240, heavy: false, source: this });
+          if (!e.takeHit(dmg, dir, { knock: 240, heavy: false, source: this })) continue;
           this.registerHit(dmg, false);
           g.hitstop(0.03);
         }
@@ -518,9 +532,10 @@ class Player {
       const boss = g.boss;
       if (boss && boss.alive && boss.active &&
           Math.abs(boss.y - this.y) < 36 && (boss.x - this.x) * dir > -22 && (boss.x - this.x) * dir < 108 && Math.abs(boss.z - this.z) < 80) {
-        boss.takeHit(bossDmg, dir, { knock: 200, heavy: false });
-        this.registerHit(bossDmg, false);
-        g.hitstop(0.03);
+        if (boss.takeHit(bossDmg, dir, { knock: 200, heavy: false })) {
+          this.registerHit(bossDmg, false);
+          g.hitstop(0.03);
+        }
       }
       for (const prop of g.stage.props) {
         if (prop.dead) continue;
@@ -557,9 +572,14 @@ class Player {
     this.specialT = 0.62;
     this.specialTick = 0;
     this.vx = 0; this.vy = 0;
+    const { renderScale, reducedMotion } = this.game;
+    const compact = renderScale < 1;
+    this.specialEffect = new SpecialEffect(this.x, this.footY, { compact, reducedMotion });
     Sound.sfx('special');
-    this.game.shake(8, 0.4);
-    this.game.spawnBurst(this.x, this.y, 34, '#ffe066');
+    if (!reducedMotion) {
+      this.game.shake(8, 0.4);
+      this.game.spawnBurst(this.x, this.y, compact ? 22 : 34, '#ffe066');
+    }
   }
 
   startRoxyRain() {
@@ -615,21 +635,23 @@ class Player {
       for (const e of g.enemies.slice()) {
         if (!e.alive) continue;
         if (Math.hypot(e.x - this.x, (e.y - this.y) * 1.3) < 130 && Math.abs(e.z - this.z) < 60) {
-          e.takeHit(dmg, sign(e.x - this.x) || this.facing, { knock: 300, heavy: true, source: this });
-          this.registerHit(dmg, false);
+          if (e.takeHit(dmg, sign(e.x - this.x) || this.facing, { knock: 300, heavy: true, source: this })) {
+            this.registerHit(dmg, false);
+          }
         }
       }
       const boss = g.boss;
       if (boss && boss.alive && boss.active && Math.hypot(boss.x - this.x, (boss.y - this.y) * 1.2) < 144) {
-        boss.takeHit(bossDmg, sign(boss.x - this.x) || this.facing, { knock: 160, heavy: false });
-        this.registerHit(bossDmg, false);
+        if (boss.takeHit(bossDmg, sign(boss.x - this.x) || this.facing, { knock: 160, heavy: false })) {
+          this.registerHit(bossDmg, false);
+        }
       }
       for (const prop of g.stage.props) {
         if (!prop.dead && Math.hypot(prop.x - this.x, (prop.y - this.y) * 1.3) < 120) {
           g.stage.hitProp(prop, 1, g);
         }
       }
-      g.spawnSparks(this.x + rand(-50, 50), this.y, 40 + rand(0, 30), 4, 'gold');
+      if (!g.reducedMotion) g.spawnSparks(this.x + rand(-50, 50), this.y, 40 + rand(0, 30), 4, 'gold');
     }
     if (this.specialT <= 0) {
       this.setState('idle');
@@ -698,9 +720,10 @@ class Player {
 
     if (this.buffer.attack > 0) {
       this.buffer.attack = 0;
-      e.takeHit(8 * this.attackMul, this.facing, { knock: 0, heavy: false, source: this, isGrabHit: true });
+      const dmg = 8 * this.attackMul;
+      if (!e.takeHit(dmg, this.facing, { knock: 0, heavy: false, source: this, isGrabHit: true })) return;
       this.grabT = Math.min(2.4, this.grabT + 0.55);
-      this.registerHit(8 * this.attackMul, false);
+      this.registerHit(dmg, false);
       this.game.hitstop(0.03);
       this.game.shake(4, 0.1);
       Sound.sfx('punch2');
@@ -790,6 +813,7 @@ class Player {
   }
 
   die(dir) {
+    this.specialEffect = null;
     this.alive = false;
     this.state = 'dead';
     this.deadT = 0;
@@ -923,6 +947,17 @@ class Player {
     const blink = this.invuln > 0 && this.state !== 'down' && this.state !== 'special';
     const alpha = blink ? (Math.sin(this.stateT * 38 + this.animT * 20) > 0 ? 0.45 : 1) : 1;
 
+    const charge = g.state === 'playing' ? Input.chargeProgress() : 0;
+    if (charge > 0) {
+      const barY = Math.max(82, footY - h - 17);
+      ctx.fillStyle = '#110a20';
+      ctx.fillRect(sx - 24, barY, 48, 6);
+      ctx.fillStyle = charge >= 1 ? '#ffe066' : '#7dffc4';
+      ctx.fillRect(sx - 23, barY + 1, 46 * charge, 4);
+      text(ctx, charge >= 1 ? 'LISTO' : 'CARGA', sx, barY - 4, 12, '#fff0b0', { align: 'center' });
+    }
+
+    this.specialEffect?.drawBehind(ctx, g.camera.x);
     drawSprite(ctx, g.heroSprite, spriteState, this.animT, sx, footY + offsetY + yLift, {
       h,
       flip: this.facing < 0,
@@ -941,25 +976,7 @@ class Player {
 
     this.drawShotgun(ctx, sx, footY, h);
 
-    if (this.state === 'special' && !g.roxyMode) {
-      // spinning slash arcs
-      ctx.save();
-      ctx.translate(sx, footY - h * 0.5);
-      ctx.rotate(this.stateT * 16);
-      ctx.globalAlpha = 0.55;
-      ctx.strokeStyle = '#fff3b0';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, h * 0.58, h * 0.20, 0, 0, Math.PI * 1.35);
-      ctx.stroke();
-      ctx.globalAlpha = 0.25;
-      ctx.strokeStyle = '#ffd166';
-      ctx.lineWidth = 8;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, h * 0.66, h * 0.24, 0, 0.4, Math.PI * 1.6);
-      ctx.stroke();
-      ctx.restore();
-    }
+    this.specialEffect?.drawFront(ctx, g.camera.x);
   }
 
   drawShotgun(ctx, sx, footY, h) {

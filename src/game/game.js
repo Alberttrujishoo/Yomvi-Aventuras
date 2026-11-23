@@ -8,11 +8,13 @@ import { Player } from './player.js';
 import { drawNpc, drawNpcBubble, spawnNpc, updateNpcEvent } from './npc-event.js';
 import { PROP_DEFS, Stage } from './stage.js';
 import { Input } from '../input/actions.js';
+import { createGamepadInput } from '../input/gamepad.js';
 import { TouchControls } from '../input/touch.js';
 import { LEVELS } from '../levels/index.js';
 import { Assets } from '../media/assets.js';
 import { Sound } from '../media/audio.js';
 import { Art } from '../media/procedural-art.js';
+import { FEROZ_CAMEO_DURATION } from '../ui/feroz-cameo.js';
 import { HUD } from '../ui/hud.js';
 
 /* ============================================================
@@ -28,6 +30,7 @@ class Game {
   constructor(canvas, { compact = false } = {}) {
     this.canvas = canvas;
     this.renderScale = compact ? 0.75 : 1;
+    this.reducedMotion = false;
     this.canvas.width = CFG.W * this.renderScale;
     this.canvas.height = CFG.H * this.renderScale;
     this.ctx = canvas.getContext('2d', { alpha: false });
@@ -40,6 +43,8 @@ class Game {
     this.lastTs = null;
     this.simulationTime = 0;
     this.viewBlocks = new Set();
+    this.gamepad = createGamepadInput(Input);
+    this.skipIntro = null;
     this.score = 0;
     this.hiScore = this.loadHi();
     this.kills = 0;
@@ -118,6 +123,8 @@ class Game {
     this.simulationTime = 0;
     this.nextRenderTime = null;
     Input.clear();
+    this.clearPlayerCharge();
+    this.gamepad.suspend();
     if (this.viewBlocked) {
       if (this.state === 'playing') this.state = 'paused';
       Sound.suspend();
@@ -131,6 +138,7 @@ class Game {
       return;
     }
 
+    this.gamepad.poll(this.state);
     const elapsed = this.lastTs === null ? SIMULATION_STEP : (ts - this.lastTs) / 1000;
     this.lastTs = ts;
     this.simulationTime = Math.min(MAX_CATCH_UP, this.simulationTime + Math.max(0, elapsed));
@@ -139,7 +147,10 @@ class Game {
       this.simulationTime -= SIMULATION_STEP;
       this.time += SIMULATION_STEP;
       if (Input.hit('mute')) this.muted = Sound.toggleMute();
+      if (this.state === 'playing' && this.player?.alive) Input.updateCharges(SIMULATION_STEP);
+      else this.clearPlayerCharge();
       this.update(SIMULATION_STEP);
+      if (this.state !== 'playing') this.clearPlayerCharge();
       Input.endFrame();
     }
 
@@ -176,6 +187,8 @@ class Game {
     this.boss = null;
     this.bossDefeated = false;
     this.bossStarted = false;
+    this.bossRecoveryTime = 0;
+    this.bossRecovery = null;
     this.enemies = [];
     this.projectiles = [];
     this.shockwaves = [];
@@ -199,6 +212,7 @@ class Game {
     this.comboCount = 0;
     this.comboTimer = 0;
     this.comboFlash = 0;
+    this.ferozCameoAge = null;
     this.damageFlash = 0;
     this.grabPrompt = false;
     this.hitstopT = 0;
@@ -243,8 +257,11 @@ class Game {
         x: 150, y: 444, z: 0, vx: 0, vy: 0, vz: 0,
         state: 'idle', stateT: 0, alive: true, hp: p.maxHp,
         invuln: 2, flash: 0, grabTarget: null, lives: Math.max(1, p.lives),
+        specialEffect: null,
+        comboCount: 0, comboTimer: 0,
       });
       p.buffer.attack = 0;
+      p.buffer.chargedAttack = false;
       p.buffer.jump = 0;
       p.buffer.special = 0;
     } else {
@@ -312,6 +329,7 @@ class Game {
   startContinue() {
     this.state = 'continue';
     this.continueTime = 10;
+    this.ferozCameoAge = null;
     this.hitstopT = 0;
     this.shakeT = 0;
     this.bannerData = null;
@@ -342,6 +360,7 @@ class Game {
     p.x = clamp(this.camera.x + 200, 60, this.stage.width - 60);
     p.y = 444;
     p.grabTarget = null;
+    p.buffer.chargedAttack = false;
     this.damageFlash = 0;
     this.npcBubble = null;
     this.spawnsPaused = false;
@@ -352,12 +371,19 @@ class Game {
     this.continueTime = 10;
   }
 
+  clearPlayerCharge() {
+    Input.cancelCharges();
+    if (this.player) this.player.buffer.chargedAttack = false;
+  }
+
   onPlayerDeath() {
+    this.clearPlayerCharge();
     this.damageFlash = 0.5;
     this.shake(10, 0.4);
   }
 
   onBossReady() {
+    this.bossRecoveryTime = rand(10, 16);
     // The boss has walked on screen: only now start the shared boss theme.
     this.setBossMusic(true);
     if (Sound.hasExternal('bossMp3')) Sound.restartExternal();
@@ -373,6 +399,7 @@ class Game {
   onBossDefeated() {
     if (this.bossDefeated) return;
     this.bossDefeated = true;
+    if (this.bossRecovery) this.bossRecovery.dead = true;
     this.hiScore = Math.max(this.hiScore, this.score);
     this.hitstopT = 0;
     this.shakeT = 0;
@@ -408,7 +435,10 @@ class Game {
     Sound.update();
 
     // Creator intro: keep the title and all gameplay input on hold.
-    if (this.state === 'intro') return;
+    if (this.state === 'intro') {
+      if (Input.hit('skipIntro')) this.skipIntro?.();
+      return;
+    }
 
     if (this.state === 'title') {
       // Hidden ROXYFOXY mode: burger shotgun + burger rain.
@@ -573,6 +603,7 @@ class Game {
     for (const s of this.shockwaves) s.update(worldDt);
 
     this.stage.update(worldDt, this);
+    this.updateBossRecovery(worldDt);
     this.updateEffects(worldDt);
     this.updateCamera(dt);
     this.updateZone();
@@ -589,6 +620,10 @@ class Game {
   updateFlashTimers(dt) {
     this.damageFlash = Math.max(0, this.damageFlash - dt);
     this.comboFlash = Math.max(0, this.comboFlash - dt);
+    if (this.ferozCameoAge !== null) {
+      this.ferozCameoAge += dt;
+      if (this.ferozCameoAge >= FEROZ_CAMEO_DURATION) this.ferozCameoAge = null;
+    }
     this.flashScreen = Math.max(0, this.flashScreen - dt * 1.9);
     if (this.levelMsg) {
       this.levelMsg.t -= dt;
@@ -657,6 +692,11 @@ class Game {
     Sound.setTrack(Sound.hasExternal(track) ? track : fallbackTrack(zone), force);
   }
 
+  showFerozCameo() {
+    this.ferozCameoAge = 0;
+    Sound.sfx('ferozCameo');
+  }
+
   updateCombo(dt) {
     if (this.comboTimer > 0) {
       this.comboTimer -= dt;
@@ -712,6 +752,7 @@ class Game {
     p.x = clamp(this.camera.x + 210, 70, this.stage.width - 70);
     p.y = clamp(p.y, 360, 470);
     p.buffer.attack = 0;
+    this.clearPlayerCharge();
     Sound.sfx('heal');
     this.spawnBurst(p.x, p.y, 18, '#7dffc4');
     this.banner('¡SIGUE EN PIE!', 'VIDAS: ' + p.lives, '#7dffc4', 1.6);
@@ -813,6 +854,31 @@ class Game {
     this.banner('¡ZONA DESPEJADA!', 'GO! → AVANZA A LA DERECHA', '#7dffc4', 2.6);
     Sound.sfx('go');
     this.spawnBurst(this.player.x, this.player.y, 20, '#7dffc4');
+  }
+
+  updateBossRecovery(dt) {
+    const boss = this.boss;
+    const player = this.player;
+    if (this.state !== 'playing' || !boss?.alive || !boss.active || !player?.alive) return;
+    if (this.bossRecovery && !this.bossRecovery.dead) return;
+
+    this.bossRecoveryTime -= dt;
+    if (this.bossRecoveryTime > 0 || player.hp >= player.maxHp) return;
+
+    const left = this.minX() + 30;
+    const right = this.maxX() - 30;
+    const distance = rand(105, 180);
+    const toward = Math.random() < 0.5 ? -1 : 1;
+    const preferred = player.x + distance * toward;
+    const alternate = player.x - distance * toward;
+    const suitable = (x) => x >= left && x <= right && Math.abs(x - boss.x) >= 95;
+    const x = suitable(preferred) ? preferred : suitable(alternate) ? alternate : clamp(
+      player.x + (player.x < boss.x ? -distance : distance), left, right,
+    );
+    const y = clamp(player.y + rand(-46, 46), CFG.FLOOR_TOP + 12, CFG.FLOOR_BOTTOM - 12);
+    this.bossRecovery = this.stage.spawnItem(x, y, this.level.bossRecoveryItem, { recovery: true });
+    this.bossRecoveryTime = rand(10, 16);
+    this.ringText('RECUPERA VIDA', x, y - 42, '#7dffc4');
   }
 
   minX() {
@@ -1146,6 +1212,9 @@ class Game {
     drawNpcBubble(this, ctx);
     if (this.state === 'paused') HUD.pause(ctx, this);
     this.drawCabinetOverlay(ctx);
+    if (this.state === 'playing' && this.ferozCameoAge !== null) {
+      HUD.drawFerozCameo(ctx, this);
+    }
   }
 
   drawTitleScreen(ctx) {
@@ -1164,7 +1233,7 @@ class Game {
       ctx.imageSmoothingEnabled = smoothing;
     }
 
-    text(ctx, this.touchMode ? 'Toca para iniciar' : 'Pulsa ENTER para iniciar', CFG.W / 2, CFG.H / 2, 32, '#ffffff', {
+    text(ctx, this.touchMode ? 'Toca para iniciar' : 'ENTER / START para iniciar', CFG.W / 2, CFG.H / 2, 32, '#ffffff', {
       align: 'center',
       baseline: 'middle',
       outline: '#140a18',

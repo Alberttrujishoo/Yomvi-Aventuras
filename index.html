@@ -16,6 +16,7 @@
 <meta name="twitter:description" content="Conviertete en Yomvi y haz lo necesario para robarte el Dance Masters 2" />
 <meta name="twitter:image" content="assets/images/cover.jpg" />
 <link rel="stylesheet" href="styles/game.css" />
+<link rel="manifest" href="assets/yomvi.webmanifest" />
 </head>
 <body>
   <div id="stage-wrap">
@@ -37,9 +38,13 @@
     <div id="introHint">PULSA UNA TECLA O TOCA LA PANTALLA PARA ACTIVAR EL SONIDO</div>
   </div>
 
-  <div id="touch-controls">
+  <button type="button" id="touchStart" hidden>Iniciar</button>
+  <button type="button" id="fullscreenBtn" aria-label="Pantalla completa" aria-pressed="false" hidden>⛶</button>
+
+  <div id="touch-controls" role="group" aria-label="Controles táctiles">
     <div id="joystick" class="joystick" role="group" aria-label="Joystick de movimiento">
-      <div id="joystickKnob" class="joystick-knob"></div>
+      <div id="joystickKnob" class="joystick-knob" aria-hidden="true"></div>
+      <span class="joystick-label" aria-hidden="true">MOVER</span>
     </div>
     <div class="action-cluster">
       <button type="button" class="touch-btn touch-jump" data-action="jump" aria-label="Saltar">SALTO</button>
