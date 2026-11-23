@@ -3,8 +3,9 @@ const DIRECTIONS = [
   ['up', 12, 1, -1], ['down', 13, 1, 1],
 ];
 
-const MENU_STATES = new Set(['intro', 'title', 'briefing', 'stageselect', 'paused', 'continue', 'victory']);
-const BUTTONS = [0, 1, 2, 8, 9];
+const MENU_STATES = new Set(['title', 'briefing', 'stageselect', 'paused', 'continue', 'victory']);
+const STANDARD_BUTTONS = [0, 1, 2, 8, 9];
+const GENERIC_BUTTONS = [0, 1, 2, 3, 8, 9];
 
 function readBrowserGamepads() {
   try {
@@ -22,6 +23,7 @@ function isPressed(gamepad, index) {
 function createGamepadInput(input, read = readBrowserGamepads) {
   const pads = new Map();
   let suppressButtons = false;
+  let focused = true;
 
   function release(pad) {
     for (const direction of pad.directions) input.release(direction, pad.source);
@@ -37,7 +39,14 @@ function createGamepadInput(input, read = readBrowserGamepads) {
       }
     },
 
+    setFocused(active) {
+      if (focused === active) return;
+      focused = active;
+      this.suspend();
+    },
+
     poll(state) {
+      if (!focused) return;
       const connected = new Set();
       for (const gamepad of read()) {
         if (!gamepad?.connected) continue;
@@ -49,17 +58,22 @@ function createGamepadInput(input, read = readBrowserGamepads) {
           pads.set(gamepad.index, pad);
         }
 
-        const buttons = new Set(BUTTONS.filter(index => isPressed(gamepad, index)));
+        const standard = gamepad.mapping === 'standard';
+        const physicalButtons = standard ? STANDARD_BUTTONS : GENERIC_BUTTONS;
+        const buttons = new Set(physicalButtons.filter(index => isPressed(gamepad, index)));
         const hit = index => !suppressButtons && buttons.has(index) && !pad.buttons.has(index);
+        const menu = hit(9) || (!standard && hit(3));
         if (state === 'playing') {
           // Standard physical layout: south jumps, west attacks, east uses the special.
-          if (hit(9)) input.tap('pause');
+          if (menu) input.tap('pause');
           if (hit(0)) input.tap('jump');
           if (hit(2)) input.beginCharge(pad.source, 'attack');
           if (pad.buttons.has(2) && !buttons.has(2)) input.releaseCharge(pad.source);
           if (hit(1)) input.tap('special');
+        } else if (state === 'intro') {
+          if (menu || hit(0)) input.tap('skipIntro');
         } else if (MENU_STATES.has(state)) {
-          if (hit(9) || hit(0)) input.tap('start');
+          if (menu || hit(0)) input.tap('start');
           if (state === 'stageselect' && (hit(1) || hit(8))) input.tap('pause');
         }
         pad.buttons = buttons;

@@ -121,6 +121,7 @@ class Game {
     this.simulationTime = 0;
     this.nextRenderTime = null;
     Input.clear();
+    this.clearPlayerCharge();
     this.gamepad.suspend();
     if (this.viewBlocked) {
       if (this.state === 'playing') this.state = 'paused';
@@ -144,9 +145,10 @@ class Game {
       this.simulationTime -= SIMULATION_STEP;
       this.time += SIMULATION_STEP;
       if (Input.hit('mute')) this.muted = Sound.toggleMute();
-      if (this.state === 'playing') Input.updateCharges(SIMULATION_STEP);
+      if (this.state === 'playing' && this.player?.alive) Input.updateCharges(SIMULATION_STEP);
+      else this.clearPlayerCharge();
       this.update(SIMULATION_STEP);
-      if (this.state !== 'playing') Input.cancelCharges();
+      if (this.state !== 'playing') this.clearPlayerCharge();
       Input.endFrame();
     }
 
@@ -254,7 +256,7 @@ class Game {
         invuln: 2, flash: 0, grabTarget: null, lives: Math.max(1, p.lives),
       });
       p.buffer.attack = 0;
-      p.buffer.chargedAttack = 0;
+      p.buffer.chargedAttack = false;
       p.buffer.jump = 0;
       p.buffer.special = 0;
     } else {
@@ -352,7 +354,7 @@ class Game {
     p.x = clamp(this.camera.x + 200, 60, this.stage.width - 60);
     p.y = 444;
     p.grabTarget = null;
-    p.buffer.chargedAttack = 0;
+    p.buffer.chargedAttack = false;
     this.damageFlash = 0;
     this.npcBubble = null;
     this.spawnsPaused = false;
@@ -363,7 +365,13 @@ class Game {
     this.continueTime = 10;
   }
 
+  clearPlayerCharge() {
+    Input.cancelCharges();
+    if (this.player) this.player.buffer.chargedAttack = false;
+  }
+
   onPlayerDeath() {
+    this.clearPlayerCharge();
     this.damageFlash = 0.5;
     this.shake(10, 0.4);
   }
@@ -422,7 +430,7 @@ class Game {
 
     // Creator intro: keep the title and all gameplay input on hold.
     if (this.state === 'intro') {
-      if (Input.hit('start')) this.skipIntro?.();
+      if (Input.hit('skipIntro')) this.skipIntro?.();
       return;
     }
 
@@ -729,6 +737,7 @@ class Game {
     p.x = clamp(this.camera.x + 210, 70, this.stage.width - 70);
     p.y = clamp(p.y, 360, 470);
     p.buffer.attack = 0;
+    this.clearPlayerCharge();
     Sound.sfx('heal');
     this.spawnBurst(p.x, p.y, 18, '#7dffc4');
     this.banner('¡SIGUE EN PIE!', 'VIDAS: ' + p.lives, '#7dffc4', 1.6);

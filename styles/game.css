@@ -197,7 +197,7 @@ body.touch.landscape #touchStart:not([hidden]) {
   touch-action: manipulation;
 }
 
-body.touch.landscape #touchStart[data-screen="briefing"]:not([hidden]) {
+body.touch.landscape #touchStart:is([data-screen="briefing"], [data-screen="continue"]):not([hidden]) {
   left: auto;
   right: calc(16px + env(safe-area-inset-right));
   transform: none;

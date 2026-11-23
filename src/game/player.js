@@ -40,7 +40,7 @@ class Player {
     this.invuln = 1.2;
     this.flash = 0;
     this.squash = 1;
-    this.buffer = { attack: 0, chargedAttack: 0, jump: 0, special: 0 };
+    this.buffer = { attack: 0, chargedAttack: false, jump: 0, special: 0 };
     this.attackIndex = 0;
     this.attackT = 0;
     this.attackHit = new Set();
@@ -65,14 +65,13 @@ class Player {
   }
 
   captureInput() {
-    if (Input.hit('chargedAttack')) this.buffer.chargedAttack = 0.3;
+    if (this.alive && Input.hit('chargedAttack')) this.buffer.chargedAttack = true;
     if (Input.hit('attack')) this.buffer.attack = 0.24;
     if (Input.hit('jump')) this.buffer.jump = 0.16;
     if (Input.hit('special')) this.buffer.special = 0.2;
   }
 
   tickBuffers(dt) {
-    this.buffer.chargedAttack = Math.max(0, this.buffer.chargedAttack - dt);
     this.buffer.attack = Math.max(0, this.buffer.attack - dt);
     this.buffer.jump = Math.max(0, this.buffer.jump - dt);
     this.buffer.special = Math.max(0, this.buffer.special - dt);
@@ -286,8 +285,8 @@ class Player {
       this.animT += dt;
     }
 
-    if (this.buffer.chargedAttack > 0) {
-      this.buffer.chargedAttack = 0;
+    if (this.buffer.chargedAttack) {
+      this.buffer.chargedAttack = false;
       this.startAttack(CHARGED_ATTACK);
       return;
     }

@@ -89,6 +89,12 @@ test('portrait freezes briefing and continue timers and blocks keyboard resume',
   await expect.poll(() => page.evaluate(() => GAME.state)).toBe('playing');
 
   await page.evaluate(() => GAME.startContinue());
+  await page.setViewportSize({ width: 667, height: 375 });
+  const continueButton = page.getByRole('button', { name: 'Continuar', exact: true });
+  await expect(continueButton).toBeVisible();
+  const button = await continueButton.boundingBox();
+  const canvas = await page.locator('#game').boundingBox();
+  expect(button.x).toBeGreaterThan(canvas.x + canvas.width * 0.65);
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.locator('#rotateHint')).toBeVisible();
   await page.evaluate(() => { GAME.continueTime = 0.2; });

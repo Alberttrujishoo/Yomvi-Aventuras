@@ -1005,7 +1005,7 @@ const HUD = {
     ctx.stroke();
     drawCoinIcon(ctx, CFG.W / 2 - 118, slotY + 22, 12);
     const blink = Math.sin(t * 6) > 0;
-    text(ctx, g.touchMode ? 'TOCA PARA INSERTAR MONEDA' : 'ENTER / START PARA CONTINUAR', CFG.W / 2 + 14, slotY + 19, 12, blink ? UI.goldHot : UI.green, {
+    text(ctx, g.touchMode ? 'TOCA PARA CONTINUAR' : 'ENTER / START', CFG.W / 2 + 14, slotY + 19, 12, blink ? UI.goldHot : UI.green, {
       align: 'center', outlineW: 3, spacing: 1, font: FONT_MONO,
     });
     text(ctx, 'CONTINÚA CON ENERGÍA COMPLETA', CFG.W / 2 + 14, slotY + 34, 8, UI.dim, {

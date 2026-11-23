@@ -29,7 +29,8 @@ import { playCreatorIntro } from './ui/intro.js';
       Input.flush();
     });
   };
-  window.addEventListener('blur', () => game.gamepad.suspend());
+  window.addEventListener('blur', () => game.gamepad.setFocused(false));
+  window.addEventListener('focus', () => game.gamepad.setFocused(true));
 
   const setStatus = (msg, pct) => {
     if (statusEl) statusEl.textContent = msg;

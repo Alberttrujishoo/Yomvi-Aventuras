@@ -14,9 +14,15 @@ test('launches the packaged game and combines alternate keyboard bindings', asyn
   });
 
   await page.goto('/');
-  await page.getByRole('button', { name: 'Omitir intro' }).click();
+  const skip = page.getByRole('button', { name: 'Omitir intro' });
+  await expect(skip).toBeVisible();
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('z');
+  await expect(skip).toBeVisible();
+  expect(await state(page)).toBe('intro');
+  await skip.click();
   await expect.poll(() => state(page)).toBe('title');
-  expect(media.some((url) => /\/audio\/|arthas|cryptocino|gaytelos/.test(url))).toBe(false);
+  expect(media.some((url) => /\/audio\/(mall|hospital(?:-original)?|street|boss)\.mp3$|\/images\/(arthas|cryptocino|gaytelos)\.jpg$/.test(url))).toBe(false);
   await page.keyboard.press('Enter');
   await expect.poll(() => state(page)).toBe('briefing');
   await page.keyboard.press('Enter');
@@ -178,6 +184,16 @@ test('a standard gamepad can start, move, attack, jump, pause and resume', async
   await page.waitForTimeout(50);
   await button(9, true);
   await expect.poll(() => state(page)).toBe('playing');
+
+  const xUnfocused = await page.evaluate(() => {
+    window.dispatchEvent(new Event('blur'));
+    window.testPad.axes[0] = 0.8;
+    return GAME.player.x;
+  });
+  await page.waitForTimeout(150);
+  expect(await page.evaluate(() => GAME.player.x)).toBeCloseTo(xUnfocused, 0);
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect.poll(() => page.evaluate(() => GAME.player.x)).toBeGreaterThan(xUnfocused + 10);
 });
 
 
@@ -207,4 +223,26 @@ test('X taps to jump and a full charge deals a heavy hit on release', async ({ p
   await expect.poll(() => page.evaluate(() => GAME.player.state)).toBe('attack');
   await expect.poll(() => page.evaluate(() => GAME.enemies[0]?.hp ?? 0))
     .toBeLessThanOrEqual(Math.max(0, enemyHp - 30));
+  await expect.poll(() => page.evaluate(() => GAME.player.state)).toBe('idle');
+
+  await page.keyboard.down('x');
+  const progress = () => page.evaluate(async () => (await import('/src/input/actions.js')).Input.chargeProgress());
+  await expect.poll(progress).toBe(1);
+  await page.keyboard.press('k');
+  await expect.poll(() => page.evaluate(() => GAME.player.state)).toBe('jump');
+  await page.keyboard.up('x');
+  await expect.poll(() => page.evaluate(() => GAME.player.buffer.chargedAttack)).toBe(true);
+  await expect.poll(() => page.evaluate(() => GAME.player.state)).toBe('attack');
+  await expect.poll(() => page.evaluate(() => GAME.player.state)).toBe('idle');
+
+  await page.keyboard.down('x');
+  await expect.poll(progress).toBe(1);
+  await page.evaluate(() => {
+    GAME.player.die(1);
+    GAME.player.deadT = 1.4;
+  });
+  await page.keyboard.up('x');
+  await page.waitForFunction(() => GAME.player.alive);
+  expect(await progress()).toBe(0);
+  expect(await page.evaluate(() => [GAME.player.state, GAME.player.buffer.chargedAttack])).toEqual(['idle', false]);
 });
