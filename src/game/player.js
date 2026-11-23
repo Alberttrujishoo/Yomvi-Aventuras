@@ -4,6 +4,7 @@ import { CFG, approach, chance, clamp, rand, sign } from '../engine/math.js';
 import { Particle } from '../engine/particle.js';
 import { Input } from '../input/actions.js';
 import { Sound } from '../media/audio.js';
+import { RoxyBurgerShot, RoxyFallingBurger } from './roxy.js';
 
 const CHARGED_ATTACK = 4;
 const PLAYER_ATTACKS = [
@@ -59,6 +60,7 @@ class Player {
     this.landSquash = 0;
     this.specialCost = 12;
     this.hurtT = 0;
+    this.muzzleT = 0;
     this.stats = { hits: 0, kills: 0, damage: 0 };
   }
 
@@ -115,6 +117,7 @@ class Player {
     this.invuln = Math.max(0, this.invuln - dt);
     this.flash = Math.max(0, this.flash - dt);
     this.landSquash = Math.max(0, this.landSquash - dt);
+    this.muzzleT = Math.max(0, this.muzzleT - dt);
     this.turnT = Math.max(0, this.turnT - dt);
     this.comboTimer = Math.max(0, this.comboTimer - dt);
     if (this.comboTimer <= 0) this.comboCount = 0;
@@ -299,7 +302,8 @@ class Player {
 
     if (this.buffer.attack > 0) {
       this.buffer.attack = 0;
-      if (!this.tryGrab()) this.startAttack(0);
+      if (!this.game.roxyMode && this.tryGrab()) return;
+      this.startAttack(0);
       return;
     }
 
@@ -408,6 +412,10 @@ class Player {
   }
 
   performHit(index) {
+    if (this.game.roxyMode) {
+      this.fireRoxyBurger(index);
+      return;
+    }
     const a = PLAYER_ATTACKS[index];
     const dir = this.facing;
     const g = this.game;
@@ -471,6 +479,21 @@ class Player {
     }
   }
 
+  fireRoxyBurger(index) {
+    const a = PLAYER_ATTACKS[index];
+    const g = this.game;
+    const dir = this.facing;
+    const dmg = a.dmg * 2 * this.attackMul;
+    const muzzleX = this.x + dir * 40;
+
+    g.projectiles.push(new RoxyBurgerShot(g, muzzleX, this.y, dir, dmg, this));
+    this.muzzleT = 0.09;
+    this.attackHit.add('swing');
+    Sound.sfx('shotgun');
+    g.shake(4, 0.1);
+    g.spawnSparks(muzzleX, this.y, 64, 7, 'gold');
+  }
+
   registerHit(dmg, heavy) {
     this.stats.hits++;
     this.comboCount++;
@@ -521,6 +544,23 @@ class Player {
   }
 
   startSpecial() {
+    if (this.game.roxyMode) {
+      this.setState('special');
+      this.hp -= this.getSpecialCost();
+      this.invuln = 1.05;
+      this.specialT = 0.9;
+      this.specialTick = 0;
+      this.vx = 0;
+      this.vy = 0;
+      this.muzzleT = 0.16;
+      Sound.sfx('special');
+      this.game.shake(10, 0.5);
+      this.game.spawnBurst(this.x, this.y, 34, '#ff5fae');
+      this.game.ringText('¡LLUVIA DE HAMBURGUESAS!', this.x, this.y - 170, '#ff5fae');
+      this.startRoxyRain();
+      return;
+    }
+
     this.setState('special');
     this.hp -= this.getSpecialCost();
     this.invuln = 1.05;
@@ -532,7 +572,46 @@ class Player {
     this.game.spawnBurst(this.x, this.y, 34, '#ffe066');
   }
 
+  startRoxyRain() {
+    const g = this.game;
+    const dmg = PLAYER_ATTACKS[0].dmg * 3 * this.attackMul;
+    const targets = [];
+
+    for (const e of g.enemies) {
+      if (!e.alive) continue;
+      targets.push({ x: e.x, y: e.y });
+      targets.push({ x: e.x + rand(-26, 26), y: e.y + rand(-12, 12) });
+    }
+
+    const boss = g.boss;
+    if (boss && boss.alive && boss.active) {
+      for (let i = 0; i < 3; i++) {
+        targets.push({ x: boss.x + rand(-46, 46), y: boss.y + rand(-18, 18) });
+      }
+    }
+
+    const cam = g.camera.x;
+    for (let i = 0; i < 6; i++) {
+      targets.push({
+        x: cam + rand(70, CFG.W - 70),
+        y: rand(CFG.FLOOR_TOP + 20, CFG.FLOOR_BOTTOM - 10),
+      });
+    }
+
+    targets.slice(0, 26).forEach((t, i) => {
+      g.projectiles.push(new RoxyFallingBurger(g, t.x, t.y, i * 0.05 + rand(0, 0.1), dmg, this));
+    });
+  }
+
   updateSpecial(dt) {
+    if (this.game.roxyMode) {
+      this.specialT -= dt;
+      if (this.specialT <= 0) {
+        this.setState('idle');
+        this.squash = 0.9;
+      }
+      return;
+    }
     this.specialT -= dt;
     this.specialTick -= dt;
     this.x += this.vx * dt;
@@ -796,10 +875,18 @@ class Player {
         scaleY = 0.94;
         break;
       case 'special':
-        spriteState = 'special';
-        tilt = 0;
-        scaleX = 0.34 + Math.abs(Math.cos(this.stateT * 22)) * 0.9;
-        offsetY = -4;
+        if (g.roxyMode) {
+          spriteState = 'attack';
+          frame = 1;
+          tilt = this.facing * 0.05;
+          scaleX = 1;
+          offsetY = 0;
+        } else {
+          spriteState = 'special';
+          tilt = 0;
+          scaleX = 0.34 + Math.abs(Math.cos(this.stateT * 22)) * 0.9;
+          offsetY = -4;
+        }
         break;
       case 'hurt':
         spriteState = 'hurt';
@@ -841,7 +928,7 @@ class Player {
       scaleX *= 1 - 0.28 * Math.sin(k * Math.PI);
     }
     scaleY *= this.squash;
-    if (this.state === 'special') yLift = -6;
+    if (this.state === 'special') yLift = g.roxyMode ? 0 : -6;
 
     const blink = this.invuln > 0 && this.state !== 'down' && this.state !== 'special';
     const alpha = blink ? (Math.sin(this.stateT * 38 + this.animT * 20) > 0 ? 0.45 : 1) : 1;
@@ -868,11 +955,13 @@ class Player {
       flash: this.flash > 0,
       alpha,
       walkFps: 7,
-      glow: this.state === 'special' ? '#ffe066' : (this.invuln > 0 ? '#ffe066' : null),
+      glow: this.state === 'special' ? (g.roxyMode ? '#ff5fae' : '#ffe066') : (this.invuln > 0 ? '#ffe066' : null),
       glowSize: 12,
     });
 
-    if (this.state === 'special') {
+    this.drawShotgun(ctx, sx, footY, h);
+
+    if (this.state === 'special' && !g.roxyMode) {
       // spinning slash arcs
       ctx.save();
       ctx.translate(sx, footY - h * 0.5);
@@ -891,6 +980,74 @@ class Player {
       ctx.stroke();
       ctx.restore();
     }
+  }
+
+  drawShotgun(ctx, sx, footY, h) {
+    const g = this.game;
+    if (!g.roxyMode) return;
+    if (!this.alive || this.state === 'down' || this.state === 'getup' || this.state === 'hurt') return;
+
+    const scale = h / 150;
+    const up = this.state === 'special';
+    ctx.save();
+    ctx.translate(sx + this.facing * 12 * scale, footY - h * 0.55);
+    ctx.scale(this.facing * scale, scale);
+    if (up) ctx.rotate(-1.05);
+
+    // wooden stock
+    ctx.fillStyle = '#6b3b24';
+    ctx.beginPath();
+    ctx.moveTo(-24, -3);
+    ctx.lineTo(-8, -5);
+    ctx.lineTo(-8, 5);
+    ctx.lineTo(-19, 4);
+    ctx.closePath();
+    ctx.fill();
+
+    // receiver
+    ctx.fillStyle = '#2b2b36';
+    ctx.fillRect(-9, -5, 16, 10);
+    ctx.fillStyle = '#4a4d59';
+    ctx.fillRect(-9, -5, 16, 2);
+
+    // barrel
+    ctx.fillStyle = '#5a5f6c';
+    ctx.fillRect(7, -4, 30, 5);
+    ctx.fillStyle = '#9aa0ac';
+    ctx.fillRect(7, -4, 30, 2);
+    ctx.fillStyle = '#3b3e48';
+    ctx.fillRect(35, -4, 3, 5);
+
+    // pump
+    ctx.fillStyle = '#8a4a26';
+    ctx.fillRect(10, 1, 12, 4);
+    ctx.fillStyle = '#b06a3a';
+    ctx.fillRect(10, 1, 12, 1);
+
+    // sight
+    ctx.fillStyle = '#ffd166';
+    ctx.fillRect(30, -6, 3, 2);
+
+    // muzzle flash
+    if (this.muzzleT > 0) {
+      ctx.save();
+      ctx.translate(40, -1);
+      ctx.globalAlpha = Math.min(1, this.muzzleT / 0.16 + 0.3);
+      ctx.fillStyle = '#fff3b0';
+      ctx.shadowColor = '#ff8a3d';
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(17, -11);
+      ctx.lineTo(11, 0);
+      ctx.lineTo(17, 11);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#ff5fae';
+      ctx.fillRect(-2, -2, 6, 4);
+      ctx.restore();
+    }
+    ctx.restore();
   }
 }
 

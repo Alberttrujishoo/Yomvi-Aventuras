@@ -16,6 +16,7 @@ import { playCreatorIntro } from './ui/intro.js';
   const fillEl = document.getElementById('loadFill');
 
   Input.init();
+  Sound.loadCoinSfx();
 
   const game = new Game(canvas, { compact: TouchControls.detect() });
   window.GAME = game;

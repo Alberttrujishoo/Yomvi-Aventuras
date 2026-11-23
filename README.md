@@ -4,7 +4,7 @@ Beat ’em up arcade en Canvas y JavaScript. Yomvi recorre el Galerías Mall, el
 
 ## Jugar en local
 
-Con Node.js 22 o posterior, ejecuta `npm run dev` y abre [http://127.0.0.1:8080](http://127.0.0.1:8080). En Windows también puedes ejecutar `start.bat`. El servidor local admite peticiones parciales del video y el audio. Abre el juego por HTTP para que el navegador pueda cargar los módulos y leer los sprites.
+Con Node.js 22 o posterior, ejecuta `npm run dev` y abre [http://127.0.0.1:8080](http://127.0.0.1:8080). En Windows también puedes ejecutar `start.bat`: usa Node si está instalado y, si no, Python como servidor estático de respaldo. El servidor Node admite peticiones parciales del video y el audio. Abre el juego por HTTP para que el navegador pueda cargar los módulos y leer los sprites.
 
 - **Ordenador**. Enter inicia y también permite saltar la guía. Muévete con WASD o flechas. Z golpea, X salta, C activa el especial y P o Esc pausa.
 - **Móvil**. Gira el teléfono a horizontal y toca **Iniciar**. Usa el joystick para moverte y los botones para golpear, saltar, usar el especial y pausar. Si giras a vertical con una partida activa, se pausa.
