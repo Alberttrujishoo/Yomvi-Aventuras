@@ -97,6 +97,7 @@ const TouchControls = {
     if (s !== this.menuState) {
       const label = MENU_LABELS[s];
       this.menuButton.hidden = !label;
+      this.menuButton.dataset.screen = s;
       if (label) this.menuButton.textContent = label;
       this.menuState = s;
     }
@@ -208,19 +209,21 @@ const TouchControls = {
         btn.classList.add('active');
         try { btn.setPointerCapture(e.pointerId); } catch (err) { /* noop */ }
         e.preventDefault();
-        Input.press(action, source);
+        if (action === 'attack') Input.beginCharge(source, action);
+        else Input.press(action, source);
       };
 
-      const reset = () => {
+      const reset = (completed = false) => {
         const pointer = pointerId;
         pointerId = null;
         if (pointer !== null && btn.hasPointerCapture(pointer)) btn.releasePointerCapture(pointer);
         btn.classList.remove('active');
-        Input.release(action, source);
+        if (action === 'attack') Input.releaseCharge(source, completed);
+        else Input.release(action, source);
       };
 
       const up = (e) => {
-        if (e.pointerId === pointerId) reset();
+        if (e.pointerId === pointerId) reset(e.type === 'pointerup');
       };
       this.resetButtons.push(reset);
       btn.addEventListener('click', (e) => {

@@ -286,7 +286,7 @@ const HUD = {
       ctx.fillRect(0, 514, CFG.W, 26);
       ctx.fillStyle = 'rgba(255, 209, 102, 0.28)';
       ctx.fillRect(0, 514, CFG.W, 1);
-      text(ctx, 'WASD/FLECHAS MOVER   ·   Z/J GOLPEAR   ·   X/K SALTAR · PATADA AÉREA   ·   C/L GIRO (-12HP)   ·   DOBLE TOQUE DASH   ·   P PAUSA   ·   M SONIDO', 14, 532, 9, '#b9a8d0', {
+      text(ctx, 'WASD / FLECHAS MOVER   ·   Z GOLPE   ·   X SALTO / MANTÉN X PARA CARGAR   ·   C ESPECIAL   ·   P PAUSA   ·   M SONIDO', 14, 532, 9, '#b9a8d0', {
         font: FONT_MONO, outlineW: 2, spacing: 0.3,
       });
     }
@@ -807,8 +807,8 @@ const HUD = {
     const rowsL = g.touchMode ? [
       ['MOVER', 'JOYSTICK IZQUIERDO'],
       ['GOLPEAR', 'BOTÓN GOLPE (COMBO x3)'],
-      ['SALTAR', 'BOTÓN SALTO (PATADA AÉREA)'],
-      ['ESPECIAL', 'BOTÓN ESP. (GIRO · -12 HP)'],
+      ['SALTAR', 'SALTO / PATADA AÉREA'],
+      ['ESPECIAL', 'ESP. (GIRO · -12 HP)'],
       ['DASH', 'DOBLE FLICK ← →'],
     ] : [
       ['MOVER', 'WASD / FLECHAS / STICK'],
@@ -822,30 +822,30 @@ const HUD = {
       ['LANZAR', 'SALTO MIENTRAS AGARRA'],
       ['PAUSA', 'BOTÓN II'],
       ['SONIDO', 'VOLUMEN DEL DISPOSITIVO'],
-      ['CONSEJO', 'USA EL GIRO SI TE RODEAN'],
+      ['CARGADO', 'MANTÉN GOLPE Y SUELTA'],
     ] : [
       ['AGARRE', 'Z JUNTO A ENEMIGO ATURDIDO'],
       ['LANZAR', 'X / K MIENTRAS AGARRA'],
       ['PAUSA', 'P / ESC / START'],
       ['SONIDO', 'M'],
-      ['CONSEJO', 'USA EL GIRO SI TE RODEAN'],
+      ['CARGADO', 'MANTÉN X / CUADRADO'],
     ];
 
     rowsL.forEach((row, i) => {
       const y = 215 + i * 25;
-      text(ctx, row[0], 156, y, 9.5, UI.gold, {
+      text(ctx, row[0], 156, y, 12, UI.gold, {
         outlineW: 2, font: FONT_MONO, spacing: 0.8, alpha,
       });
-      text(ctx, row[1], 286, y, 9.5, '#e4dcf2', {
+      text(ctx, row[1], 286, y, 12, '#e4dcf2', {
         outlineW: 2, font: FONT_MONO, spacing: 0.4, alpha,
       });
     });
     rowsR.forEach((row, i) => {
       const y = 215 + i * 25;
-      text(ctx, row[0], 516, y, 9.5, UI.gold, {
+      text(ctx, row[0], 516, y, 12, UI.gold, {
         outlineW: 2, font: FONT_MONO, spacing: 0.8, alpha,
       });
-      text(ctx, row[1], 630, y, 9.5, '#e4dcf2', {
+      text(ctx, row[1], 630, y, 12, '#e4dcf2', {
         outlineW: 2, font: FONT_MONO, spacing: 0.4, alpha,
       });
     });
@@ -899,9 +899,11 @@ const HUD = {
     text(ctx, 'PREPÁRATE' + dots, CFG.W / 2, 512, 9, UI.cyan, {
       align: 'center', outlineW: 2, font: FONT_MONO, spacing: 2, alpha: alpha * 0.85,
     });
-    text(ctx, g.touchMode ? 'TOCA PARA INICIAR YA' : 'ENTER / START PARA INICIAR YA', CFG.W / 2, 530, 8, '#6f6288', {
-      align: 'center', outlineW: 2, font: FONT_MONO, spacing: 0.6, alpha: alpha * 0.8,
-    });
+    if (!g.touchMode) {
+      text(ctx, 'ENTER / START PARA INICIAR YA', CFG.W / 2, 530, 8, '#6f6288', {
+        align: 'center', outlineW: 2, font: FONT_MONO, spacing: 0.6, alpha: alpha * 0.8,
+      });
+    }
   },
 
   /* ==========================================================

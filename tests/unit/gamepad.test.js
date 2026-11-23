@@ -23,12 +23,28 @@ test('maps gamepad buttons on press, while held buttons do not trigger twice', (
   assert.equal(input.hit('jump'), false);
   pad.buttons[0].pressed = false;
   gamepad.poll('playing');
-  for (const [index, action] of [[0, 'jump'], [1, 'special'], [2, 'attack'], [9, 'pause']]) {
+  for (const [index, action] of [[0, 'jump'], [1, 'special'], [9, 'pause']]) {
     pad.buttons[index].pressed = true;
     gamepad.poll('playing');
     assert.equal(input.hit(action), true);
     input.endFrame();
   }
+  pad.buttons[2].pressed = true;
+  gamepad.poll('playing');
+  assert.equal(input.hit('attack'), false);
+  pad.buttons[2].pressed = false;
+  gamepad.poll('playing');
+  assert.equal(input.hit('attack'), true);
+  input.endFrame();
+
+  pad.buttons[2].pressed = true;
+  gamepad.poll('playing');
+  input.updateCharges(0.7);
+  pad.buttons[2].pressed = false;
+  gamepad.poll('playing');
+  assert.equal(input.hit('chargedAttack'), true);
+  input.endFrame();
+
   gamepad.suspend();
   gamepad.poll('paused');
   assert.equal(input.hit('start'), false);

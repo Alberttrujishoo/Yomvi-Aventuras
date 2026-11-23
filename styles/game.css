@@ -193,8 +193,14 @@ body.touch.landscape #touchStart:not([hidden]) {
   border-radius: 8px;
   background: #160d23;
   color: #fff0b0;
-  font: 700 14px "Trebuchet MS", sans-serif;
+  font: 700 16px "Trebuchet MS", sans-serif;
   touch-action: manipulation;
+}
+
+body.touch.landscape #touchStart[data-screen="briefing"]:not([hidden]) {
+  left: auto;
+  right: calc(16px + env(safe-area-inset-right));
+  transform: none;
 }
 
 body.touch.landscape.in-game #touchStart:not([hidden]) {
@@ -206,7 +212,7 @@ body.touch.landscape.in-game #touchStart:not([hidden]) {
   inset: auto 0 7px;
   color: #fff0b0;
   text-align: center;
-  font: 700 9px "Trebuchet MS", sans-serif;
+  font: 700 11px "Trebuchet MS", sans-serif;
   pointer-events: none;
 }
 
@@ -281,7 +287,7 @@ body.touch.landscape.in-game #touch-controls {
   border: 2px solid rgba(255, 209, 102, 0.55);
   background: rgba(10, 6, 16, 0.55);
   color: #ffe9a8;
-  font: 900 10px/1 "Courier New", monospace;
+  font: 900 12px/1 "Courier New", monospace;
   letter-spacing: 0.4px;
   text-align: center;
   text-shadow: 0 2px 4px #000;
@@ -306,7 +312,7 @@ body.touch.landscape.in-game #touch-controls {
   height: var(--btn-lg);
   border-color: rgba(255, 95, 174, 0.75);
   color: #ffd6ea;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .touch-jump {

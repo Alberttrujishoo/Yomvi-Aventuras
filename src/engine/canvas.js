@@ -7,6 +7,8 @@ const FONT_MONO = '"Courier New", ui-monospace, monospace';
    Text helper — chunky arcade lettering with hard outline
    ------------------------------------------------------------ */
 function text(ctx, str, x, y, size, color, o = {}) {
+  // Gameplay labels and instructions get a larger boost than already-large titles.
+  size *= size <= 28 ? 1.15 : 1.08;
   const {
     align = 'left',
     baseline = 'alphabetic',

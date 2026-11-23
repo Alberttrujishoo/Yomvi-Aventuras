@@ -31,7 +31,10 @@ function createGamepadInput(input, read = readBrowserGamepads) {
   return {
     suspend() {
       suppressButtons = true;
-      for (const pad of pads.values()) release(pad);
+      for (const pad of pads.values()) {
+        release(pad);
+        input.releaseCharge(pad.source, false);
+      }
     },
 
     poll(state) {
@@ -52,7 +55,8 @@ function createGamepadInput(input, read = readBrowserGamepads) {
           // Standard physical layout: south jumps, west attacks, east uses the special.
           if (hit(9)) input.tap('pause');
           if (hit(0)) input.tap('jump');
-          if (hit(2)) input.tap('attack');
+          if (hit(2)) input.beginCharge(pad.source, 'attack');
+          if (pad.buttons.has(2) && !buttons.has(2)) input.releaseCharge(pad.source);
           if (hit(1)) input.tap('special');
         } else if (MENU_STATES.has(state)) {
           if (hit(9) || hit(0)) input.tap('start');
@@ -80,6 +84,7 @@ function createGamepadInput(input, read = readBrowserGamepads) {
       for (const [index, pad] of pads) {
         if (!connected.has(index)) {
           release(pad);
+          input.releaseCharge(pad.source, false);
           pads.delete(index);
         }
       }

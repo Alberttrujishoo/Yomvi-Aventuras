@@ -9,6 +9,7 @@ Con Node.js 22 o posterior, ejecuta `npm run dev` y abre [http://127.0.0.1:8080]
 - **Ordenador**. Enter inicia y también permite saltar la guía. Muévete con WASD o flechas. Z golpea, X salta, C activa el especial y P o Esc pausa.
 - **Móvil**. Gira el teléfono a horizontal y toca **Iniciar**. Usa el joystick para moverte y los botones para golpear, saltar, usar el especial y pausar. Si giras a vertical con una partida activa, se pausa.
 - **Mando USB o Bluetooth**. Conecta el mando y pulsa un botón para que el navegador lo detecte. Usa el stick izquierdo o la cruceta para moverte. En Xbox, **X** golpea, **A** salta y **B** activa el especial. En PlayStation, corresponden a **□**, **×** y **○**. **Menú/Options** inicia, pausa o reanuda. Los mandos USB genéricos dependen de cómo el navegador ordena sus botones. Si el navegador bloquea el audio, toca la pantalla o pulsa una tecla.
+- **Ataque cargado**. Mantén pulsado **X** en el teclado, **X** en Xbox, **□** en PlayStation o **Golpear** en el móvil. Suelta cuando aparezca **LISTO** para lanzar un golpe de mayor alcance y daño. Una pulsación corta de X en el teclado sigue saltando y **K** salta de inmediato.
 - **Jefes**. Si Yomvi ha perdido vida, aparecen recuperaciones a intervalos aleatorios en la arena. Pasa por encima para recogerlas antes de que desaparezcan.
 - **Pruebas rápidas**. En el título, pulsa 1, 2 o 3 para entrar directamente al nivel correspondiente.
 

@@ -1,15 +1,17 @@
 import { drawSprite } from '../media/sprite-renderer.js';
-import { drawShadow } from '../engine/canvas.js';
+import { drawShadow, text } from '../engine/canvas.js';
 import { CFG, approach, chance, clamp, rand, sign } from '../engine/math.js';
 import { Particle } from '../engine/particle.js';
 import { Input } from '../input/actions.js';
 import { Sound } from '../media/audio.js';
 
+const CHARGED_ATTACK = 4;
 const PLAYER_ATTACKS = [
   { dur: 0.27, hitAt: 0.095, dmg: 6, reach: 67, knock: 80, hitstop: 0.02, sound: 'punch1', heavy: false, frame: 0 },
   { dur: 0.29, hitAt: 0.105, dmg: 8, reach: 72, knock: 110, hitstop: 0.025, sound: 'punch2', heavy: false, frame: 1 },
   { dur: 0.50, hitAt: 0.20, dmg: 17, reach: 89, knock: 340, hitstop: 0.04, sound: 'heavy', heavy: true, frame: 2 },
   { dur: 0.34, hitAt: 0.10, dmg: 13, reach: 91, knock: 300, hitstop: 0.04, sound: 'heavy', heavy: true, frame: 2 },
+  { dur: 0.6, hitAt: 0.16, dmg: 30, reach: 121, knock: 430, hitstop: 0.06, sound: 'heavy', heavy: true, frame: 2 },
 ];
 
 class Player {
@@ -37,7 +39,7 @@ class Player {
     this.invuln = 1.2;
     this.flash = 0;
     this.squash = 1;
-    this.buffer = { attack: 0, jump: 0, special: 0 };
+    this.buffer = { attack: 0, chargedAttack: 0, jump: 0, special: 0 };
     this.attackIndex = 0;
     this.attackT = 0;
     this.attackHit = new Set();
@@ -61,12 +63,14 @@ class Player {
   }
 
   captureInput() {
+    if (Input.hit('chargedAttack')) this.buffer.chargedAttack = 0.3;
     if (Input.hit('attack')) this.buffer.attack = 0.24;
     if (Input.hit('jump')) this.buffer.jump = 0.16;
     if (Input.hit('special')) this.buffer.special = 0.2;
   }
 
   tickBuffers(dt) {
+    this.buffer.chargedAttack = Math.max(0, this.buffer.chargedAttack - dt);
     this.buffer.attack = Math.max(0, this.buffer.attack - dt);
     this.buffer.jump = Math.max(0, this.buffer.jump - dt);
     this.buffer.special = Math.max(0, this.buffer.special - dt);
@@ -279,7 +283,11 @@ class Player {
       this.animT += dt;
     }
 
-    // dropped-item pickup is handled by the stage
+    if (this.buffer.chargedAttack > 0) {
+      this.buffer.chargedAttack = 0;
+      this.startAttack(CHARGED_ATTACK);
+      return;
+    }
 
     if (this.buffer.special > 0) {
       if (this.hp > this.getSpecialCost()) {
@@ -376,7 +384,9 @@ class Player {
     const a = PLAYER_ATTACKS[this.attackIndex];
     this.attackT += dt;
 
-    if (this.attackIndex === 3) {
+    if (this.attackIndex === CHARGED_ATTACK) {
+      this.x += this.facing * 275 * dt * Math.max(0, 1 - this.attackT / a.hitAt);
+    } else if (this.attackIndex === 3) {
       this.x += this.facing * 420 * dt * Math.max(0, 1 - this.attackT / 0.2);
     } else if (this.attackT < 0.09) {
       this.x += this.facing * 70 * dt;
@@ -405,7 +415,7 @@ class Player {
     const dmg = a.dmg * this.attackMul;
 
     // slash visual
-    g.addSlash(this.x + dir * 31, this.y, attackY + 74, dir, index === 2 || index === 3);
+    g.addSlash(this.x + dir * 31, this.y, attackY + 74, dir, a.heavy);
     Sound.sfx(a.sound);
 
     let didHit = false;
@@ -835,6 +845,16 @@ class Player {
 
     const blink = this.invuln > 0 && this.state !== 'down' && this.state !== 'special';
     const alpha = blink ? (Math.sin(this.stateT * 38 + this.animT * 20) > 0 ? 0.45 : 1) : 1;
+
+    const charge = g.state === 'playing' ? Input.chargeProgress() : 0;
+    if (charge > 0) {
+      const barY = Math.max(82, footY - h - 17);
+      ctx.fillStyle = '#110a20';
+      ctx.fillRect(sx - 24, barY, 48, 6);
+      ctx.fillStyle = charge >= 1 ? '#ffe066' : '#7dffc4';
+      ctx.fillRect(sx - 23, barY + 1, 46 * charge, 4);
+      text(ctx, charge >= 1 ? 'LISTO' : 'CARGA', sx, barY - 4, 12, '#fff0b0', { align: 'center' });
+    }
 
     drawSprite(ctx, g.heroSprite, spriteState, this.animT, sx, footY + offsetY + yLift, {
       h,

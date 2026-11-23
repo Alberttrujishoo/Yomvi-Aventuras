@@ -27,8 +27,10 @@ test('touch starts the game, keeps simultaneous actions and pauses on rotation',
     await touch('touchStart', [below]);
     await expect.poll(() => page.evaluate(() => GAME.player.state)).toBe('walk');
     await touch('touchStart', [below, button]);
-    await expect.poll(() => page.evaluate(() => GAME.player.state)).toBe('attack');
+    await expect.poll(() => page.evaluate(async () => (await import('/src/input/actions.js')).Input.chargeProgress()))
+      .toBeGreaterThan(0);
     await touch('touchEnd', []);
+    await expect.poll(() => page.evaluate(() => GAME.player.state)).toBe('attack');
     await cdp.detach();
   } else {
     await attack.tap();

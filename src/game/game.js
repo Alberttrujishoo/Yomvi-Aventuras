@@ -143,7 +143,9 @@ class Game {
       this.simulationTime -= SIMULATION_STEP;
       this.time += SIMULATION_STEP;
       if (Input.hit('mute')) this.muted = Sound.toggleMute();
+      if (this.state === 'playing') Input.updateCharges(SIMULATION_STEP);
       this.update(SIMULATION_STEP);
+      if (this.state !== 'playing') Input.cancelCharges();
       Input.endFrame();
     }
 
@@ -251,6 +253,7 @@ class Game {
         invuln: 2, flash: 0, grabTarget: null, lives: Math.max(1, p.lives),
       });
       p.buffer.attack = 0;
+      p.buffer.chargedAttack = 0;
       p.buffer.jump = 0;
       p.buffer.special = 0;
     } else {
@@ -348,6 +351,7 @@ class Game {
     p.x = clamp(this.camera.x + 200, 60, this.stage.width - 60);
     p.y = 444;
     p.grabTarget = null;
+    p.buffer.chargedAttack = 0;
     this.damageFlash = 0;
     this.npcBubble = null;
     this.spawnsPaused = false;

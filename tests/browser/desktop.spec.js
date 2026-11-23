@@ -162,8 +162,10 @@ test('a standard gamepad can start, move, attack, jump, pause and resume', async
   await page.evaluate(() => { window.testPad.axes[0] = 0.8; });
   await expect.poll(() => page.evaluate(() => GAME.player.x)).toBeGreaterThan(x + 12);
   await button(2, true);
-  await expect.poll(() => page.evaluate(() => GAME.player.state)).toBe('attack');
+  await expect.poll(() => page.evaluate(async () => (await import('/src/input/actions.js')).Input.chargeProgress()))
+    .toBeGreaterThan(0);
   await button(2, false);
+  await expect.poll(() => page.evaluate(() => GAME.player.state)).toBe('attack');
   await page.evaluate(() => { window.testPad.axes[0] = 0; });
   await expect.poll(() => page.evaluate(() => GAME.player.state)).toBe('idle');
   await button(0, true);
@@ -176,4 +178,33 @@ test('a standard gamepad can start, move, attack, jump, pause and resume', async
   await page.waitForTimeout(50);
   await button(9, true);
   await expect.poll(() => state(page)).toBe('playing');
+});
+
+
+test('X taps to jump and a full charge deals a heavy hit on release', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Omitir intro' }).click();
+  await expect.poll(() => state(page)).toBe('title');
+  await page.keyboard.press('1');
+  await expect.poll(() => state(page)).toBe('playing');
+
+  await page.keyboard.press('x');
+  await expect.poll(() => page.evaluate(() => GAME.player.state)).toBe('jump');
+  await expect.poll(() => page.evaluate(() => GAME.player.state)).toBe('idle');
+
+  await page.keyboard.down('x');
+  await expect.poll(() => page.evaluate(async () => (await import('/src/input/actions.js')).Input.chargeProgress()))
+    .toBe(1);
+  expect(await page.evaluate(() => GAME.player.state)).toBe('idle');
+  const enemyHp = await page.evaluate(() => {
+    const enemy = GAME.enemies[0];
+    enemy.x = GAME.player.x + 95;
+    enemy.y = GAME.player.y;
+    GAME.player.invuln = 2;
+    return enemy.hp;
+  });
+  await page.keyboard.up('x');
+  await expect.poll(() => page.evaluate(() => GAME.player.state)).toBe('attack');
+  await expect.poll(() => page.evaluate(() => GAME.enemies[0]?.hp ?? 0))
+    .toBeLessThanOrEqual(Math.max(0, enemyHp - 30));
 });
