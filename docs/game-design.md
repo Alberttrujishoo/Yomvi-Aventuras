@@ -2,30 +2,21 @@
 
 Prototipo jugable de **beat 'em up arcade 2.5D** inspirado en *The Simpsons Arcade* (Konami, 1991), hecho con **HTML5 Canvas + JavaScript vanilla**. Ambientado en el **Galerías Mall de Maracaibo, Venezuela**, en 1991, con un **Stage 2** en el **Hospital General** y un **Stage 3** en la **calle de Galerías Mall y la Burger Room**: tres niveles completos, tres jefes con barras de vida por capas y un final con créditos.
 
-![Yomvi](PERSONAJE.PNG)
+![Yomvi](../assets/images/yomvi.jpg)
 
 ---
 
 ## ▶ Cómo jugar
 
-1. Haz doble clic en **`start.bat`** (recomendado). Abre `http://localhost:8080` en tu navegador.
-2. Primero se ve el **intro del creador** (`IMG_7652.MP4`); al terminar, la pantalla queda **2 segundos en negro** y aparece la pantalla de inicio. Si el navegador bloquea el audio automático, el video arranca silenciado y puedes activar el sonido con cualquier tecla o clic.
-3. También puedes abrir `index.html` directamente, pero los navegadores bloquean la lectura de píxeles de los PNG locales (`file://`). En ese caso el juego arranca con el **pixel-art procedural** como respaldo, sin romperse.
-4. La **pantalla inicial** muestra `MAIN.PNG` con el texto **“Press START para iniciar”** en el centro. Pulsa **ENTER** o **Z** para insertar la moneda ficticia y empezar.
-5. En el título, pulsa **1**, **2** o **3** para saltar directamente al **Stage 1 (Galerías Mall)**, **Stage 2 (Hospital)** o **Stage 3 (Calle / Burger Room)** y probarlo sin jugar los anteriores. La progresión normal sigue siendo **Stage 1 → Stage 2 → Stage 3**.
-6. En el título, escribe la secuencia secreta **`AHPUCCA`** para abrir una **pantalla oculta de selección de stage** con tres tarjetas; elige con las flechas y confirma con **Enter / Z** (Esc vuelve al título).
-
-> Requiere un navegador moderno con Web Audio (Chrome, Edge, Firefox). No necesita dependencias ni build.
->
-> 📱 **En móvil se juega en horizontal.** Al abrir en vertical aparece el aviso **“GIRA TU TELÉFONO”**. En horizontal tendrás un **joystick** a la izquierda y los botones **GOLPE / SALTO / ESP.** a la derecha; toca la pantalla para iniciar, continuar o volver al título.
+Consulta el [README](../README.md) para instalar, iniciar y probar el juego. El título permite saltar al mall, al hospital o a la calle con **1**, **2** y **3**. La secuencia `AHPUCCA` abre la selección de nivel con las flechas y **Enter** o **Z**.
 
 ## 🎵 Música
 
-- **`DDR Yomvi 1 long.mp3`** es el tema del Stage 1. Se carga desde la raíz y **solo empieza a sonar al pulsar START**; permanece en silencio en la pantalla de presentación, en el briefing, en la pantalla de CONTINUE y en el título.
-- Cuando el jefe **aparece en escena** (termina su entrada y se muestra su barra), el tema del nivel se detiene y entra **`Boss2.mp3`** (el mismo tema para los tres jefes).
-- **`DDR Yomvi 2 long.mp3`** es el tema del Stage 2: suena en **Recepción, Pasillo y Habitación 302** hasta que aparece Cryptocino; entonces entra **`Boss2.mp3`**. (Si falta el DDR, el juego intenta el antiguo `Stage 2.mp3` y luego la melodía hospitalaria procedural).
-- **`DDR Yomvi 3 long.mp3`** es el tema de la calle, el callejón de comida y la Burger Room hasta que aparece GAYTELOS; entonces entra **`Boss2.mp3`**.
-- **`Boss2.mp3`** es el **tema de jefe compartido**: suena cuando **Arthas**, **Cryptocino** o **GAYTELOS aparecen en escena** (al terminar su entrada y mostrarse la barra de jefe), no al entrar a la zona del jefe. Si falta, cada jefe usa su chiptune de respaldo (`boss` / `boss2` / `burger`).
+- **`mall.mp3`** es el tema del Stage 1. Se carga desde `assets/audio/` y **solo empieza a sonar al pulsar START**; permanece en silencio en la pantalla de presentación, en el briefing, en la pantalla de CONTINUE y en el título.
+- Cuando el jefe **aparece en escena** (termina su entrada y se muestra su barra), el tema del nivel se detiene y entra **`boss.mp3`** (el mismo tema para los tres jefes).
+- **`hospital.mp3`** es el tema del Stage 2: suena en **Recepción, Pasillo y Habitación 302** hasta que aparece Cryptocino; entonces entra **`boss.mp3`**. (Si falta el tema principal, el juego intenta el antiguo `hospital-original.mp3` y luego la melodía hospitalaria procedural).
+- **`street.mp3`** es el tema de la calle, el callejón de comida y la Burger Room hasta que aparece GAYTELOS; entonces entra **`boss.mp3`**.
+- **`boss.mp3`** es el **tema de jefe compartido**: suena cuando **Arthas**, **Cryptocino** o **GAYTELOS aparecen en escena** (al terminar su entrada y mostrarse la barra de jefe), no al entrar a la zona del jefe. Si falta, cada jefe usa su chiptune de respaldo (`boss` / `boss2` / `burger`).
 - Si cualquiera de los MP3 no está en la carpeta, el juego usa automáticamente la banda sonora chiptune procedural (mall / pista de hielo / jefe / hospital / jefe final / calle / burger), también sintetizada con Web Audio.
 - Los efectos de sonido (golpes, saltos, monedas, GO!, derrotas, fanfarria) son 100 % procedurales.
 
@@ -65,9 +56,9 @@ Consejos de combate:
 
 ## 🕹️ Contenido
 
-- **Intro del creador**: al cargar el juego se reproduce **`IMG_7652.MP4`** (logo de AMONGOLICUS PRODUCTIONS). Después hay **2 segundos de pantalla negra** y recién entonces aparece la pantalla de inicio. El título y el input quedan bloqueados hasta que termina el intro.
-- **Pantalla inicial**: se usa **`MAIN.PNG`** a pantalla completa, sin logos, HUD ni overlays extra encima de la imagen. Lo único que se dibuja sobre ella es el texto centrado **“Press START para iniciar”**.
-- **Briefing DEMO de 10 segundos**: al pulsar START y antes del primer nivel aparece una pantalla negra con todos los controles, el aviso de que es un **demo** y el objetivo principal: **Yomvi debe vencer a sus enemigos CLOAQUÍSTICOS** hasta llegar a Arthas. Al terminar, arranca el nivel y la música.
+- **Intro del creador**: al cargar el juego se reproduce **`intro.mp4`** (logo de AMONGOLICUS PRODUCTIONS). Después hay **2 segundos de pantalla negra** y recién entonces aparece la pantalla de inicio. El título y el input quedan bloqueados hasta que termina el intro.
+- **Pantalla inicial**: se usa **`cover.jpg`** a pantalla completa, sin logos, HUD ni overlays extra encima de la imagen. Lo único que se dibuja sobre ella es el texto centrado **“Press START para iniciar”**.
+- **Guía DEMO de hasta 10 segundos**: al pulsar START y antes del primer nivel aparece una pantalla negra con todos los controles, el aviso de que es un **demo** y el objetivo principal: **Yomvi debe vencer a sus enemigos CLOAQUÍSTICOS** hasta llegar a Arthas. Al terminar, arranca el nivel y la música. También se puede saltar con Start o con un toque.
 - **3 zonas en un solo escenario con scroll y bloqueos de cámara**:
   1. **Pasillo central** — azulejos pastel, letreros de neón, palmeras, bancas y papeleras destructibles (sueltan pastelitos, tequeños y refrescos).
   2. **Pista de hielo** — gradas, patinadores animados, iluminación azul y una zona con **fricción reducida**.
@@ -90,7 +81,7 @@ Consejos de combate:
 - **Evento NPC**: al limpiar la oleada del pasillo aparece una chica más baja que Yomvi (jean negro, franela blanca) al lado derecho. Si te acercas a ~70 px, se pausan los spawns y sale sobre Yomvi un **globo de diálogo pixel-art**: **“Te gusta el pipi o la totona?”**, con blips retro. Dura **3.5 s** o se cierra con **Z / X**; luego parpadea la flecha amarilla **“GO! →”**.
 - **Enemigos nuevos**: **Orderly** (rápido, bata teal y mascarilla), **Doctor** (flanquea y golpea con portapapeles) y **Security** (pesado, porra y gorra). Todos con sprites procedurales de 16 bits.
 - **Props destructibles**: carritos médicos, papeleras, sillas, sueros y camillas. Sueltan **botiquines (+35)**, **jugos (+15)** o **pastelitos (+28)**.
-- **CRYPTOCINO** (`JEFE2.PNG`) — jefe de 3 capas y 480 HP:
+- **CRYPTOCINO** (`cryptocino.jpg`) — jefe de 3 capas y 480 HP:
   - **Fase 1**: ráfagas de **velas crypto rojas/verdes**, dash a toda velocidad y giro con laptop que lanza proyectiles.
   - **Fase 2 (<50 %)**: aura de brasas rojas/doradas, más velocidad, invoca **1–2 refuerzos** y ejecuta un **salto sísmico** con onda expansiva.
   - Al morir: *slow motion*, explosiones, **teaser de 10 s** con **“CRYPTOCINO REGRESARA EN AMONGOLICUS ENDGAME”** y luego el **STAGE 2 CLEAR → Stage 3**.
@@ -105,24 +96,24 @@ Consejos de combate:
 - **Evento NPC**: al limpiar la oleada del callejón aparece un muchacho de piel morena clara, pelo oscuro corto, lentes, **polo gris** y **jean azul** junto a un carrito, a la derecha de la pantalla. Si te acercas a ~70 px, se pausan los spawns y sale sobre él un **globo de diálogo pixel-art** con el texto exacto **“Esta muy rica la hamburguesa Yomvi, gracias papi”**, con blips retro. Dura **3.5 s** o se cierra con **Z / X**; luego parpadea la flecha amarilla **“GO! →”**.
 - **Enemigos nuevos**: **Diner** (comensal con camisa abierta y bandeja), **Tough** (callejero con bandana y cadena) y **Street Bouncer** (grandote con chaleco negro y camiseta amarilla).
 - **Props destructibles**: papeleras, neveras/coolers, mesas plásticas y sofás/mesas de hamburguesa. Sueltan **hamburguesas (+40)**, **perros calientes (+30)**, **pastelitos (+28)** y **refrescos (+15)**.
-- **GAYTELOS** (`JEFE3.PNG`) — jefe final de 3 capas y 660 HP:
+- **GAYTELOS** (`gaytelos.jpg`) — jefe final de 3 capas y 660 HP:
   - **Fase 1**: ráfagas de **hamburguesas con semillas** (rebotan), **dash** a alta velocidad y **golpe de suelo** con onda expansiva que hace saltar los muebles de hamburguesa.
   - **Fase 2 (<50 %)**: aura **rosa y dorada** parpadeante, más velocidad y agresividad, invoca **1–2 refuerzos** y ejecuta un **salto con giro multigolpe**.
   - Al morir: *slow motion*, explosiones, **teaser de 10 s** con **“GAYTELOS REGRESARA EN AMONGOLICUS ENDGAME”** y luego la **victoria total del juego + créditos**.
-- **Hoja `JEFE3.PNG`**: el cargador detecta sus **dos filas irregulares** (7 poses neutrales/caminata arriba y 6 poses de zancada/ataque abajo), las recorta por separado, normaliza la orientación y arma un ciclo de caminata de 4 poses, además de las poses de golpe. Si el archivo falta, usa el **GAYTELOS procedural** (sudadera gris, gorra, lentes y jean azul).
+- **Hoja `gaytelos.jpg`**: el cargador detecta sus **dos filas irregulares** (7 poses neutrales/caminata arriba y 6 poses de zancada/ataque abajo), las recorta por separado, normaliza la orientación y arma un ciclo de caminata de 4 poses, además de las poses de golpe. Si el archivo falta, usa el **GAYTELOS procedural** (sudadera gris, gorra, lentes y jean azul).
 
 ### 🧩 Sistemas comunes
 
 - **Movimiento más fluido**:
   - Ciclos de caminata de 8 poses en los enemigos procedurales.
   - Aceleración/fricción suave, inclinación según la velocidad, *bob* de cadera, respiración en reposo, *squash* al girar y al aterrizar.
-  - Micro-fundido de anticipación entre fotogramas de las hojas de sprites (`PERSONAJE.png` / `JEFE.png` / `JEFE2.png` / `JEFE3.png`) para suavizar sus 3–4 poses.
+  - Micro-fundido de anticipación entre fotogramas de las hojas de sprites (`yomvi.jpg` / `arthas.jpg` / `cryptocino.jpg` / `gaytelos.jpg`) para suavizar sus 3–4 poses.
   - Desempolvado de pasos, polvo de aterrizaje, sombras dinámicas y profundidad por `footY`.
 - **Sistema de sprites inteligente**:
-  - Detecta automáticamente filas/columnas de `PERSONAJE.png`, `JEFE.png`, `JEFE2.png` y `JEFE3.png` (escaneo de píxeles, con un modo adaptativo para hojas dibujadas a mano con fondo degradado).
+  - Detecta automáticamente filas/columnas de `yomvi.jpg`, `arthas.jpg`, `cryptocino.jpg` y `gaytelos.jpg` (escaneo de píxeles, con un modo adaptativo para hojas dibujadas a mano con fondo degradado).
   - Recorta los frames, elimina el fondo gris y normaliza la orientación de las poses de acción.
   - Genera retratos para el HUD y respeta la dirección (`facingLeft`).
-  - Si el PNG no está, no se puede leer (`file://`) o tiene un solo frame, usa **pixel-art procedural** con animaciones squash, tilt, lunge, flash blanco y patada.
+  - Si la hoja falta, no se puede leer o tiene un solo frame, usa **pixel-art procedural** con animaciones squash, tilt, lunge, flash blanco y patada.
 - **Audio 100 % sintetizado** con Web Audio: temas chiptune para mall / pista de hielo / jefe / hospital / jefe final, más SFX arcade.
 - **HUD arcade**: 1UP, puntuación, récord persistente, retrato, barra de vida segmentada, vidas, “FREE PLAY / INSERT COIN”, barra de jefe por capas y cuenta atrás de continuar de 10 s.
 - **60 FPS** con `requestAnimationFrame`, *hitstop*, screen shake, hit-sparks y ordenación por profundidad.
@@ -139,44 +130,16 @@ Consejos de combate:
 
 ## 📁 Estructura
 
-```
-index.html
-start.bat
-DDR Yomvi 1 long.mp3   (tema del Stage 1, opcional)
-DDR Yomvi 2 long.mp3   (tema del Stage 2, opcional)
-DDR Yomvi 3 long.mp3   (tema del Stage 3, opcional)
-Boss2.mp3              (tema de jefe para los 3 stages, opcional)
-Stage 2.mp3            (tema alternativo del Stage 2, opcional)
-IMG_7652.MP4           (intro del creador, opcional)
-MAIN.PNG               (pantalla inicial del juego)
-PERSONAJE.png          (Yomvi)
-JEFE.png               (Arthas)
-JEFE2.png              (Cryptocino)
-JEFE3.png              (GAYTELOS)
-css/style.css
-js/core.js      — utilidades, input, partículas, texto
-js/audio.js     — chiptune, MP3 de ambos niveles y SFX
-js/art.js       — fábrica de pixel-art procedural
-js/assets.js    — carga/segmentación de hojas de sprites
-js/stage.js     — fondos de las 3 zonas, props y pickups
-js/entities.js  — Yomvi, enemigos, Arthas, proyectiles
-js/hospital.js  — Stage 2: arte, fondos, NPC, Cryptocino y flujo
-js/street.js    — Stage 3: calle, callejón, Burger Room y GAYTELOS
-js/touch.js     — controles táctiles, joystick y orientación móvil
-js/hud.js       — HUD, barra de jefe y pantallas
-js/game.js      — director del juego, cámara y oleadas
-js/boot.js      — arranque y carga de assets
-```
+El [mapa del repositorio](../README.md#trabajar-en-el-juego) indica dónde cambiar cada sistema.
 
 ## 🖼️ Sprites personalizados
 
-Coloca `PERSONAJE.png` (Yomvi), `JEFE.png` (Arthas), `JEFE2.png` (Cryptocino) y `JEFE3.png` (GAYTELOS) en la raíz. El juego acepta:
+Las hojas se guardan en `assets/images/`. Si cambias el nombre de un archivo, actualiza su ruta en `src/media/assets.js` para Yomvi o en `src/levels/index.js` para un jefe.
 
 - **Hojas de sprites** con una o varias filas/columnas, separadas por fondo uniforme.
-- **PNG de un solo frame**: aplica animación procedural en tiempo real.
-- También reconoce la extensión en mayúsculas (`PERSONAJE.PNG`, `JEFE.PNG`, `JEFE2.PNG`, `JEFE3.PNG`).
-- Si `JEFE2.PNG` falta o no se puede leer, Cryptocino usa un sprite procedural (sudadera gris, lentes y jean oscuro) con animaciones de lunge, bob y flash.
-- Si `JEFE3.PNG` falta, GAYTELOS usa un sprite procedural equivalente (sudadera gris con capucha, gorra, lentes y jean azul).
+- **Imagen de un solo frame**: aplica animación procedural en tiempo real.
+- Si `cryptocino.jpg` falta o no se puede leer, Cryptocino usa un sprite procedural (sudadera gris, lentes y jean oscuro) con animaciones de lunge, bob y flash.
+- Si `gaytelos.jpg` falta, GAYTELOS usa un sprite procedural equivalente (sudadera gris con capucha, gorra, lentes y jean azul).
 - La hoja de GAYTELOS puede venir dibujada a mano con **fondo gris degradado y sombras suaves**: el juego usa un escaneo adaptativo para separar sus dos filas y recortar cada pose sin mezclarlas.
 
 En las hojas de Yomvi y los dos primeros jefes, la primera fila se usa para poses neutrales, la segunda para el ciclo de caminata y la última para acciones. Las poses de acción se normalizan para mirar en la misma dirección que la caminata. Si reemplazas los personajes, mantén el arte mirando hacia la derecha.
