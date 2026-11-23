@@ -136,7 +136,6 @@ class Boss2 {
     this.hp = this.maxHp;
     this.layerSize = 160;
     this.bossName = 'CRYPTOCINO';
-    this.bossSub = '';
     this.state = 'intro';
     this.stateT = 0;
     this.animT = 0;

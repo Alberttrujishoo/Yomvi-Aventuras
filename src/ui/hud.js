@@ -22,7 +22,12 @@ const UI = {
   panel: '#160f26',
 };
 
-const BOSS_BAR = { x: 210, y: 72, width: 540, height: 52 };
+const BOSS_BAR = { x: 374, y: 72, width: 376, height: 24 };
+const BOSS_LIFE_COLORS = [
+  ['#ffcb62', '#dc862c'],
+  ['#ffba49', '#d97429'],
+  ['#ff629d', '#c12c62'],
+];
 
 function hasBossBar(g) {
   return g.boss?.active && g.boss.alive && !g.bossDefeated;
@@ -184,11 +189,6 @@ const HUD = {
       text(ctx, 'SONIDO OFF [M]', 796, 53, 8, UI.red, { align: 'right', font: FONT_MONO, outlineW: 2 });
     }
 
-    /* ---------------- boss bar ---------------- */
-    if (hasBossBar(g)) {
-      this.drawBossBar(ctx, g);
-    }
-
     /* ---------------- wave / combo ---------------- */
     if (g.lockActive) {
       let label;
@@ -269,6 +269,7 @@ const HUD = {
     /* ---------------- level up / banner ---------------- */
     if (g.levelMsg) this.drawLevelUp(ctx, g);
     else if (g.bannerData && g.bannerData.t > 0) this.drawBanner(ctx, g);
+    if (hasBossBar(g)) this.drawBossBar(ctx, g);
 
     /* ---------------- damage vignette ---------------- */
     if (g.damageFlash > 0) {
@@ -305,68 +306,43 @@ const HUD = {
   },
 
   drawBossBar(ctx, g) {
-    const b = g.boss;
-    const { x: bx, y: by, width: bw, height: bh } = BOSS_BAR;
+    const boss = g.boss;
+    const { x, y, width, height } = BOSS_BAR;
+    const labelY = y + height / 2;
     ctx.save();
-    // panel
-    ctx.fillStyle = 'rgba(10, 5, 16, 0.92)';
-    roundRectPath(ctx, bx, by, bw, bh, 5);
-    ctx.fill();
-    ctx.strokeStyle = b.enraged ? UI.red : '#63243f';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.fillStyle = b.enraged ? 'rgba(255,46,99,0.18)' : 'rgba(120, 40, 70, 0.14)';
-    roundRectPath(ctx, bx + 2, by + 2, bw - 4, bh - 4, 4);
-    ctx.fill();
 
-    // label
-    const bossName = b.bossName || 'ARTHAS';
-    const bossSub = b.bossSub !== undefined ? b.bossSub : '- JORGE SALINAS';
-    text(ctx, bossName, bx + 14, by + 18, 15, UI.goldHot, {
-      outlineW: 4, spacing: 1.5, shadow: UI.red, shadowX: 2, shadowY: 2,
+    text(ctx, boss.bossName, x - 70, labelY, 18, UI.goldHot, {
+      align: 'right', baseline: 'middle', outlineW: 5, spacing: 0.6,
     });
-    if (bossSub) {
-      text(ctx, bossSub, bx + 96, by + 18, 15, UI.white, { outlineW: 4, spacing: 0.5 });
-    }
-    if (b.enraged) {
-      const a = Math.sin(g.time * 10) > 0 ? 1 : 0.35;
-      text(ctx, 'ENFURECIDO', bx + bw - 14, by + 17, 11, UI.red, {
-        align: 'right', outlineW: 3, spacing: 1, alpha: a,
-      });
-    } else {
-      text(ctx, 'JEFE FINAL', bx + bw - 14, by + 17, 9, UI.pink, {
-        align: 'right', outlineW: 2, font: FONT_MONO, spacing: 1,
-      });
-    }
+    text(ctx, boss.enraged ? 'FASE 2' : 'FASE 1', x - 62, labelY, 13, boss.enraged ? UI.pink : UI.white, {
+      baseline: 'middle', outlineW: 4, font: FONT_MONO,
+    });
 
-    // three stacked life layers
-    const lx = bx + 14, lw = bw - 28;
-    const layerH = 6, gap = 3;
-    const layerMax = b.layerSize;
-    for (let i = 0; i < 3; i++) {
-      // i=0 bottom (0..140), i=1 middle, i=2 top
-      const frac = clamp((b.hp - i * layerMax) / layerMax, 0, 1);
-      const y = by + 26 + (2 - i) * (layerH + gap);
-      ctx.fillStyle = '#260c16';
-      ctx.fillRect(lx, y, lw, layerH);
-      ctx.fillStyle = '#14070d';
-      ctx.fillRect(lx + 1, y + 1, lw - 2, layerH - 2);
-      if (frac > 0) {
-        const colors = ['#ffe066', '#ff8a3d', '#ff2e63'];
-        const grad = ctx.createLinearGradient(lx, y, lx, y + layerH);
-        grad.addColorStop(0, colors[i]);
-        grad.addColorStop(1, i === 2 ? '#b3163f' : i === 1 ? '#b75416' : '#b3911f');
-        ctx.fillStyle = grad;
-        ctx.fillRect(lx, y, lw * frac, layerH);
-        ctx.fillStyle = 'rgba(255,255,255,0.45)';
-        ctx.fillRect(lx, y, lw * frac, 1);
-        // hazard tick at the layer edge
-        ctx.fillStyle = 'rgba(255,255,255,0.5)';
-        ctx.fillRect(lx + lw * frac - 1, y, 2, layerH);
-      }
-      // tick divisions
-      ctx.fillStyle = 'rgba(0,0,0,0.35)';
-      for (let s = 1; s < 8; s++) ctx.fillRect(lx + (lw / 8) * s, y, 1, layerH);
+    ctx.fillStyle = '#110a14';
+    roundRectPath(ctx, x, y, width, height, 6);
+    ctx.fill();
+    ctx.strokeStyle = boss.enraged ? UI.pink : '#a13051';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    const inset = 6;
+    const gap = 4;
+    const segmentCount = BOSS_LIFE_COLORS.length;
+    const segmentWidth = (width - inset * 2 - gap * (segmentCount - 1)) / segmentCount;
+    const segmentHeight = height - inset * 2;
+    const segmentY = y + inset;
+    for (const [index, [highlight, base]] of BOSS_LIFE_COLORS.entries()) {
+      const segmentX = x + inset + index * (segmentWidth + gap);
+      const fraction = clamp(boss.hp / boss.layerSize - index, 0, 1);
+      ctx.fillStyle = '#361827';
+      ctx.fillRect(segmentX, segmentY, segmentWidth, segmentHeight);
+      if (fraction <= 0) continue;
+
+      const fill = ctx.createLinearGradient(0, segmentY, 0, segmentY + segmentHeight);
+      fill.addColorStop(0, highlight);
+      fill.addColorStop(1, base);
+      ctx.fillStyle = fill;
+      ctx.fillRect(segmentX, segmentY, segmentWidth * fraction, segmentHeight);
     }
     ctx.restore();
   },

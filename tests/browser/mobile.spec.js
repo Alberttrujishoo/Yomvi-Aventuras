@@ -229,26 +229,40 @@ test('combos restart between levels and Feroz leaves boss health visible', async
     GAME.updateLocks(0);
     GAME.boss.x = GAME.boss.introTarget;
     GAME.boss.update(1 / 60);
+    GAME.boss.hp = GAME.boss.layerSize * 2.43;
+    GAME.currentZone = GAME.stage.zoneAt(GAME.player.x);
     GAME.bannerData = null;
     GAME.shakeT = 0;
 
     for (let hit = 0; hit < 3; hit++) GAME.player.registerHit(0, false);
     GAME.render();
-    const readHealthEdge = () => GAME.ctx.getImageData(530, 75, 20, 15).data;
-    const before = readHealthEdge();
+    const readHealthStrip = () => GAME.ctx.getImageData(280, 54, 284, 19).data;
+    const before = readHealthStrip();
+    const colors = [485, 610, 660, 722].map(x => {
+      const [red, green, blue] = GAME.ctx.getImageData(Math.round(x * GAME.renderScale), 63, 1, 1).data;
+      if (red < 75) return 'empty';
+      return green > blue ? 'amber' : 'magenta';
+    });
     GAME.player.registerHit(0, false);
     const triggeredAt = GAME.ferozCameoAge;
     GAME.ferozCameoAge = 0.3;
     GAME.render();
-    const after = readHealthEdge();
+    const after = readHealthStrip();
     return {
       bossActive: GAME.boss.active,
       hits: GAME.comboCount,
       triggeredAt,
+      colors,
       healthUncovered: before.every((channel, index) => channel === after[index]),
     };
   });
-  expect(bossFrame).toEqual({ bossActive: true, hits: 5, triggeredAt: 0, healthUncovered: true });
+  expect(bossFrame).toEqual({
+    bossActive: true,
+    hits: 5,
+    triggeredAt: 0,
+    colors: ['amber', 'amber', 'magenta', 'empty'],
+    healthUncovered: true,
+  });
   await page.screenshot({ path: testInfo.outputPath('feroz-boss.png'), scale: 'css' });
 });
 

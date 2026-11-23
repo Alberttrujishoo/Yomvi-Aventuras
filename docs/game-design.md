@@ -115,7 +115,7 @@ Consejos de combate:
   - Genera retratos para el HUD y respeta la dirección (`facingLeft`).
   - Si la hoja falta, no se puede leer o tiene un solo frame, usa **pixel-art procedural** con animaciones squash, tilt, lunge, flash blanco y patada.
 - **Audio 100 % sintetizado** con Web Audio: temas chiptune para mall / pista de hielo / jefe / hospital / jefe final, más SFX arcade.
-- **HUD arcade**: 1UP, puntuación, récord persistente, retrato, barra de vida segmentada, vidas, “FREE PLAY / INSERT COIN”, barra de jefe por capas y cuenta atrás de continuar de 10 s.
+- **HUD arcade**: 1UP, puntuación, récord persistente, retrato, barra de vida segmentada, vidas, “FREE PLAY / INSERT COIN” y cuenta atrás de continuar de 10 s. Debajo del HUD hay una franja fija con el nombre, la fase y los tres tramos de vida del jefe.
 - **60 FPS** con `requestAnimationFrame`, *hitstop*, screen shake, hit-sparks y ordenación por profundidad.
 
 ### 📱 Móvil / táctil

@@ -95,7 +95,6 @@ class Boss3 {
     this.hp = this.maxHp;
     this.layerSize = 220;
     this.bossName = 'GAYTELOS';
-    this.bossSub = '';
     this.state = 'intro';
     this.stateT = 0;
     this.animT = 0;

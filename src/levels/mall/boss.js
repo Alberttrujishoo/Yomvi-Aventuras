@@ -16,7 +16,6 @@ class Boss {
     this.hp = this.maxHp;
     this.layerSize = 140;
     this.bossName = 'ARTHAS';
-    this.bossSub = '- JORGE SALINAS';
     this.state = 'intro';
     this.stateT = 0;
     this.animT = 0;
