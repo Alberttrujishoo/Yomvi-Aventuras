@@ -246,3 +246,21 @@ test('X taps to jump and a full charge deals a heavy hit on release', async ({ p
   expect(await progress()).toBe(0);
   expect(await page.evaluate(() => [GAME.player.state, GAME.player.buffer.chargedAttack])).toEqual(['idle', false]);
 });
+
+test('the special can run with reduced motion and a failed texture download', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.route('**/special-effect.webp', route => route.abort());
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Omitir intro' }).click();
+  await expect.poll(() => state(page)).toBe('title');
+  await page.keyboard.press('1');
+  await expect.poll(() => state(page)).toBe('playing');
+  await page.keyboard.press('c');
+  await expect.poll(() => page.evaluate(() => [
+    GAME.player.state, GAME.player.specialEffect?.reducedMotion, GAME.shakeT,
+  ])).toEqual(['special', true, 0]);
+  await expect.poll(() => page.evaluate(() => GAME.player.specialEffect)).toBe(null);
+  expect(errors).toEqual([]);
+});

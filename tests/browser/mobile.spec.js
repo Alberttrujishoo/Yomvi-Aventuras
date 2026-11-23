@@ -104,3 +104,42 @@ test('portrait freezes briefing and continue timers and blocks keyboard resume',
   await page.setViewportSize({ width: 844, height: 390 });
   await expect.poll(() => page.evaluate(() => GAME.state)).toBe('title');
 });
+
+test('the special renders two bottles and two compotes from the atlas and cleans up', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.addInitScript(() => {
+    window.specialSprites = [];
+    const original = CanvasRenderingContext2D.prototype.drawImage;
+    CanvasRenderingContext2D.prototype.drawImage = function (source, ...args) {
+      if (source instanceof HTMLImageElement && source.src.endsWith('/special-effect.webp')) {
+        window.specialSprites.push(args.slice(0, 2));
+      }
+      return original.call(this, source, ...args);
+    };
+  });
+
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Omitir intro' }).tap();
+  await page.getByRole('button', { name: 'Iniciar', exact: true }).tap();
+  await page.getByRole('button', { name: 'Empezar ya' }).tap();
+  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('playing');
+  await expect.poll(() => page.evaluate(async () => Boolean((await import('/src/media/assets.js')).Assets.specialEffect)))
+    .toBe(true);
+  const initialHp = await page.evaluate(() => GAME.player.hp);
+  await page.getByRole('button', { name: 'Giro especial' }).tap();
+  await page.waitForFunction(() => GAME.player.specialEffect?.time >= 0.3);
+  const frame = await page.evaluate(() => {
+    window.specialSprites = [];
+    GAME.render();
+    return { sprites: window.specialSprites, hp: GAME.player.hp, compact: GAME.player.specialEffect.sparkCount };
+  });
+  expect(frame.sprites.filter(([x, y]) => x === 0 && y === 132)).toHaveLength(2);
+  expect(frame.sprites.filter(([x, y]) => x === 40 && y === 132)).toHaveLength(2);
+  expect(frame.sprites).toContainEqual([0, 0]);
+  expect(frame.sprites).toContainEqual([0, 61]);
+  expect(frame.hp).toBe(initialHp - 12);
+  expect(frame.compact).toBeLessThan(22);
+  await expect.poll(() => page.evaluate(() => GAME.player.specialEffect)).toBe(null);
+  expect(errors).toEqual([]);
+});

@@ -5,6 +5,7 @@ import { Particle } from '../engine/particle.js';
 import { Input } from '../input/actions.js';
 import { Sound } from '../media/audio.js';
 import { RoxyBurgerShot, RoxyFallingBurger } from './roxy.js';
+import { SpecialEffect } from './special-effect.js';
 
 const CHARGED_ATTACK = 4;
 const PLAYER_ATTACKS = [
@@ -52,6 +53,7 @@ class Player {
     this.dashUsed = false;
     this.specialT = 0;
     this.specialTick = 0;
+    this.specialEffect = null;
     this.downT = 0;
     this.deadT = 0;
     this.alive = true;
@@ -111,6 +113,7 @@ class Player {
   }
 
   update(dt) {
+    if (this.specialEffect && !this.specialEffect.update(dt)) this.specialEffect = null;
     this.stateT += dt;
     this.tickBuffers(dt);
     this.invuln = Math.max(0, this.invuln - dt);
@@ -566,9 +569,14 @@ class Player {
     this.specialT = 0.62;
     this.specialTick = 0;
     this.vx = 0; this.vy = 0;
+    const { renderScale, reducedMotion } = this.game;
+    const compact = renderScale < 1;
+    this.specialEffect = new SpecialEffect(this.x, this.footY, { compact, reducedMotion });
     Sound.sfx('special');
-    this.game.shake(8, 0.4);
-    this.game.spawnBurst(this.x, this.y, 34, '#ffe066');
+    if (!reducedMotion) {
+      this.game.shake(8, 0.4);
+      this.game.spawnBurst(this.x, this.y, compact ? 22 : 34, '#ffe066');
+    }
   }
 
   startRoxyRain() {
@@ -638,7 +646,7 @@ class Player {
           g.stage.hitProp(prop, 1, g);
         }
       }
-      g.spawnSparks(this.x + rand(-50, 50), this.y, 40 + rand(0, 30), 4, 'gold');
+      if (!g.reducedMotion) g.spawnSparks(this.x + rand(-50, 50), this.y, 40 + rand(0, 30), 4, 'gold');
     }
     if (this.specialT <= 0) {
       this.setState('idle');
@@ -799,6 +807,7 @@ class Player {
   }
 
   die(dir) {
+    this.specialEffect = null;
     this.alive = false;
     this.state = 'dead';
     this.deadT = 0;
@@ -942,6 +951,7 @@ class Player {
       text(ctx, charge >= 1 ? 'LISTO' : 'CARGA', sx, barY - 4, 12, '#fff0b0', { align: 'center' });
     }
 
+    this.specialEffect?.drawBehind(ctx, g.camera.x);
     drawSprite(ctx, g.heroSprite, spriteState, this.animT, sx, footY + offsetY + yLift, {
       h,
       flip: this.facing < 0,
@@ -960,25 +970,7 @@ class Player {
 
     this.drawShotgun(ctx, sx, footY, h);
 
-    if (this.state === 'special' && !g.roxyMode) {
-      // spinning slash arcs
-      ctx.save();
-      ctx.translate(sx, footY - h * 0.5);
-      ctx.rotate(this.stateT * 16);
-      ctx.globalAlpha = 0.55;
-      ctx.strokeStyle = '#fff3b0';
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, h * 0.58, h * 0.20, 0, 0, Math.PI * 1.35);
-      ctx.stroke();
-      ctx.globalAlpha = 0.25;
-      ctx.strokeStyle = '#ffd166';
-      ctx.lineWidth = 8;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, h * 0.66, h * 0.24, 0, 0.4, Math.PI * 1.6);
-      ctx.stroke();
-      ctx.restore();
-    }
+    this.specialEffect?.drawFront(ctx, g.camera.x);
   }
 
   drawShotgun(ctx, sx, footY, h) {

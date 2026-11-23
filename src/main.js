@@ -19,6 +19,10 @@ import { playCreatorIntro } from './ui/intro.js';
   Sound.loadCoinSfx();
 
   const game = new Game(canvas, { compact: TouchControls.detect() });
+  const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const syncMotion = () => { game.reducedMotion = motion.matches; };
+  syncMotion();
+  motion.addEventListener('change', syncMotion);
   window.GAME = game;
   TouchControls.init(game);
 
@@ -50,6 +54,7 @@ import { playCreatorIntro } from './ui/intro.js';
   document.addEventListener('visibilitychange', syncVisibility);
   syncVisibility();
 
+  void Assets.loadSpecialEffect();
   Assets.loadTitle(setStatus).then(() => {
     game.applyAssets();
     game.muted = Sound.muted;

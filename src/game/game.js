@@ -29,6 +29,7 @@ class Game {
   constructor(canvas, { compact = false } = {}) {
     this.canvas = canvas;
     this.renderScale = compact ? 0.75 : 1;
+    this.reducedMotion = false;
     this.canvas.width = CFG.W * this.renderScale;
     this.canvas.height = CFG.H * this.renderScale;
     this.ctx = canvas.getContext('2d', { alpha: false });
@@ -254,6 +255,7 @@ class Game {
         x: 150, y: 444, z: 0, vx: 0, vy: 0, vz: 0,
         state: 'idle', stateT: 0, alive: true, hp: p.maxHp,
         invuln: 2, flash: 0, grabTarget: null, lives: Math.max(1, p.lives),
+        specialEffect: null,
       });
       p.buffer.attack = 0;
       p.buffer.chargedAttack = false;
