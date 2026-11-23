@@ -266,6 +266,47 @@ test('combos restart between levels and Feroz leaves boss health visible', async
   await page.screenshot({ path: testInfo.outputPath('feroz-boss.png'), scale: 'css' });
 });
 
+test('Arthas rejecting an attack leaves the Feroz cameo waiting for the fifth effective hit', async ({ page }) => {
+  await startMobileGame(page);
+  const result = await page.evaluate(() => {
+    const arena = GAME.locks.find(lock => lock.boss);
+    GAME.player.x = arena.triggerX;
+    GAME.camera.x = arena.camX;
+    GAME.activateLock(arena);
+    GAME.updateLocks(0);
+
+    const { boss, player } = GAME;
+    boss.x = boss.introTarget;
+    boss.update(1 / 60);
+    GAME.enemies = [];
+    player.x = boss.x - 45;
+    player.y = boss.y;
+    player.facing = 1;
+
+    const attack = () => {
+      player.startAttack(0);
+      player.performHit(0);
+      return { hp: boss.hp, combo: GAME.comboCount, cameo: GAME.ferozCameoAge };
+    };
+    for (let hit = 0; hit < 3; hit++) attack();
+    const fourth = attack();
+    boss.state = 'leap';
+    boss.z = 25;
+    const rejected = attack();
+    boss.state = 'idle';
+    boss.z = 0;
+    const fifth = attack();
+    GAME.ferozCameoAge = 0.2;
+    const sixth = attack();
+    return { fourth, rejected, fifth, sixth };
+  });
+
+  expect(result.fourth).toEqual({ hp: 396, combo: 4, cameo: null });
+  expect(result.rejected).toEqual(result.fourth);
+  expect(result.fifth).toEqual({ hp: 390, combo: 5, cameo: 0 });
+  expect(result.sixth).toEqual({ hp: 384, combo: 6, cameo: 0.2 });
+});
+
 test('rapid taps on arcade buttons are handled as control input without zoom', async ({ page }) => {
   await startMobileGame(page);
   await page.evaluate(() => {

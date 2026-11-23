@@ -447,7 +447,7 @@ class Player {
       if (this.attackHit.has(e)) continue;
       if (hitTarget(e)) {
         this.attackHit.add(e);
-        e.takeHit(dmg, dir, { knock: a.knock, heavy: a.heavy, source: this });
+        if (!e.takeHit(dmg, dir, { knock: a.knock, heavy: a.heavy, source: this })) continue;
         didHit = true;
         this.registerHit(dmg, a.heavy);
       }
@@ -457,9 +457,10 @@ class Player {
     if (boss && boss.alive && boss.active && !this.attackHit.has(boss)) {
       if (Math.abs(boss.y - this.y) < 34 && (boss.x - this.x) * dir > -34 && (boss.x - this.x) * dir < a.reach + 34 && Math.abs(boss.z - attackY) < 70) {
         this.attackHit.add(boss);
-        boss.takeHit(dmg, dir, { knock: a.knock, heavy: a.heavy });
-        didHit = true;
-        this.registerHit(dmg, a.heavy);
+        if (boss.takeHit(dmg, dir, { knock: a.knock, heavy: a.heavy })) {
+          didHit = true;
+          this.registerHit(dmg, a.heavy);
+        }
       }
     }
 
@@ -523,7 +524,7 @@ class Player {
       for (const e of g.enemies.slice()) {
         if (!e.alive) continue;
         if (Math.abs(e.y - this.y) < 30 && (e.x - this.x) * dir > -18 && (e.x - this.x) * dir < 86 && Math.abs(e.z - this.z) < 62) {
-          e.takeHit(dmg, dir, { knock: 240, heavy: false, source: this });
+          if (!e.takeHit(dmg, dir, { knock: 240, heavy: false, source: this })) continue;
           this.registerHit(dmg, false);
           g.hitstop(0.03);
         }
@@ -531,9 +532,10 @@ class Player {
       const boss = g.boss;
       if (boss && boss.alive && boss.active &&
           Math.abs(boss.y - this.y) < 36 && (boss.x - this.x) * dir > -22 && (boss.x - this.x) * dir < 108 && Math.abs(boss.z - this.z) < 80) {
-        boss.takeHit(bossDmg, dir, { knock: 200, heavy: false });
-        this.registerHit(bossDmg, false);
-        g.hitstop(0.03);
+        if (boss.takeHit(bossDmg, dir, { knock: 200, heavy: false })) {
+          this.registerHit(bossDmg, false);
+          g.hitstop(0.03);
+        }
       }
       for (const prop of g.stage.props) {
         if (prop.dead) continue;
@@ -633,14 +635,16 @@ class Player {
       for (const e of g.enemies.slice()) {
         if (!e.alive) continue;
         if (Math.hypot(e.x - this.x, (e.y - this.y) * 1.3) < 130 && Math.abs(e.z - this.z) < 60) {
-          e.takeHit(dmg, sign(e.x - this.x) || this.facing, { knock: 300, heavy: true, source: this });
-          this.registerHit(dmg, false);
+          if (e.takeHit(dmg, sign(e.x - this.x) || this.facing, { knock: 300, heavy: true, source: this })) {
+            this.registerHit(dmg, false);
+          }
         }
       }
       const boss = g.boss;
       if (boss && boss.alive && boss.active && Math.hypot(boss.x - this.x, (boss.y - this.y) * 1.2) < 144) {
-        boss.takeHit(bossDmg, sign(boss.x - this.x) || this.facing, { knock: 160, heavy: false });
-        this.registerHit(bossDmg, false);
+        if (boss.takeHit(bossDmg, sign(boss.x - this.x) || this.facing, { knock: 160, heavy: false })) {
+          this.registerHit(bossDmg, false);
+        }
       }
       for (const prop of g.stage.props) {
         if (!prop.dead && Math.hypot(prop.x - this.x, (prop.y - this.y) * 1.3) < 120) {
@@ -716,9 +720,10 @@ class Player {
 
     if (this.buffer.attack > 0) {
       this.buffer.attack = 0;
-      e.takeHit(8 * this.attackMul, this.facing, { knock: 0, heavy: false, source: this, isGrabHit: true });
+      const dmg = 8 * this.attackMul;
+      if (!e.takeHit(dmg, this.facing, { knock: 0, heavy: false, source: this, isGrabHit: true })) return;
       this.grabT = Math.min(2.4, this.grabT + 0.55);
-      this.registerHit(8 * this.attackMul, false);
+      this.registerHit(dmg, false);
       this.game.hitstop(0.03);
       this.game.shake(4, 0.1);
       Sound.sfx('punch2');

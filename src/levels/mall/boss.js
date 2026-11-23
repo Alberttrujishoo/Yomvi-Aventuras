@@ -375,8 +375,7 @@ class Boss {
   }
 
   takeHit(dmg, dir, o = {}) {
-    if (!this.alive || this.state === 'dead') return;
-    if (this.state === 'leap' || this.state === 'intro') return;
+    if (!this.alive || this.state === 'dead' || this.state === 'leap' || this.state === 'intro') return false;
 
     this.hp -= dmg;
     this.flash = 0.11;
@@ -386,13 +385,13 @@ class Boss {
 
     if (this.hp <= 0) {
       this.die();
-      return;
+      return true;
     }
 
     if (!this.enraged && this.hp <= this.maxHp * 0.5 && !this.halfShown) {
       this.halfShown = true;
       this.enrage();
-      return;
+      return true;
     }
 
     if (o.heavy && this.state !== 'charge' && this.state !== 'stompWind' && this.state !== 'leapWind') {
@@ -400,6 +399,7 @@ class Boss {
       this.stateT = 0;
       this.vx = dir * 90;
     }
+    return true;
   }
 
   enrage() {
