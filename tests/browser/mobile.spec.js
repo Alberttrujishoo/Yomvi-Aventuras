@@ -196,6 +196,11 @@ test('the Toasty cameo slides in on the fifth combo hit without covering touch c
   })).toEqual([4, null, 0]);
   await attack.tap();
   await page.waitForFunction(() => GAME.comboCount === 5 && GAME.toastyCameoAge >= 0.2 && window.toastyFrame);
+  expect(await page.evaluate(() => {
+    const age = GAME.toastyCameoAge;
+    GAME.player.registerHit(0, false);
+    return [GAME.comboCount, age !== null && GAME.toastyCameoAge === age, window.toastySounds];
+  })).toEqual([6, true, [[5, 0, true]]]);
   const frame = await page.evaluate(() => window.toastyFrame);
   const canvas = await page.locator('#game').boundingBox();
   const special = await page.getByRole('button', { name: 'Giro especial' }).boundingBox();
@@ -204,11 +209,6 @@ test('the Toasty cameo slides in on the fifth combo hit without covering touch c
   expect(await page.evaluate(() => window.toastyCaptionDrawn)).toBe(true);
   expect(canvas.y + (frame.bottom / 405) * canvas.height).toBeLessThan(special.y);
   await page.screenshot({ path: testInfo.outputPath('toasty-landscape.png'), scale: 'css' });
-  expect(await page.evaluate(() => {
-    const age = GAME.toastyCameoAge;
-    GAME.player.registerHit(0, false);
-    return [GAME.comboCount, GAME.toastyCameoAge === age, window.toastySounds];
-  })).toEqual([6, true, [[5, 0, true]]]);
   await expect.poll(() => page.evaluate(() => GAME.toastyCameoAge)).toBe(null);
   expect(errors).toEqual([]);
 });
@@ -317,7 +317,10 @@ test('the death portrait and caption appear before respawn or continue', async (
   await startMobileGame(page);
   await expect.poll(() => page.evaluate(async () => Boolean((await import('/src/media/assets.js')).Assets.deathCameo)))
     .toBe(true);
-  await page.evaluate(() => {
+  const lateHit = await page.evaluate(async () => {
+    const { RoxyFallingBurger } = await import('/src/game/roxy.js');
+    const { Sound } = await import('/src/media/audio.js');
+    const { player, enemies } = GAME;
     window.deathPortraits = 0;
     window.deathLines = new Set();
     const { ctx } = GAME;
@@ -332,15 +335,31 @@ test('the death portrait and caption appear before respawn or continue', async (
       fillText(label, ...args);
     };
     GAME.showToastyCameo();
-    GAME.player.invuln = 0;
-    GAME.player.takeHit(GAME.player.hp, GAME.player.x + 50);
+    player.comboCount = 3;
+    player.registerHit(0, false);
+    player.invuln = 0;
+    player.takeHit(player.hp, player.x + 50);
+
+    let posthumousDrumrolls = 0;
+    const playSound = Sound.sfx.bind(Sound);
+    Sound.sfx = (name) => {
+      if (name === 'toastyCameo') posthumousDrumrolls++;
+      playSound(name);
+    };
+    const enemy = enemies[0];
+    const burger = new RoxyFallingBurger(GAME, enemy.x, enemy.y, 0, 18, player);
+    burger.z = 1;
+    burger.update(1 / 60);
+    return [player.alive, GAME.comboCount, GAME.toastyCameoAge, posthumousDrumrolls];
   });
+  expect(lateHit).toEqual([false, 5, null, 0]);
   await page.waitForFunction(() => !GAME.player.alive && GAME.player.deadT >= 0.2 && window.deathPortraits > 0);
   expect(await page.evaluate(() => [...window.deathLines].join(' '))).toBe('YO CREO QUE SE MURIO!');
   expect(await page.evaluate(() => GAME.toastyCameoAge)).toBe(null);
   await page.screenshot({ path: testInfo.outputPath('death-landscape.png'), scale: 'css' });
   await expect.poll(() => page.evaluate(() => [GAME.state, GAME.player.alive, GAME.player.lives]))
     .toEqual(['playing', true, 2]);
+  expect(await page.evaluate(() => GAME.toastyCameoAge)).toBe(null);
 
   await page.evaluate(() => {
     window.deathPortraits = 0;

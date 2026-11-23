@@ -6,12 +6,12 @@ const EXIT_START = 0.94;
 const EXIT_DURATION = 0.23;
 const CAMEO_DURATION = EXIT_START + EXIT_DURATION;
 const CAMEOS = {
-  toasty: { image: 'toastyCameo', lines: ['TOASTY!'], textSize: 34, border: '#ffb64d', ink: '#ffe790' },
-  death: { image: 'deathCameo', lines: ['YO CREO QUE', 'SE MURIO!'], textSize: 23, border: '#71caff', ink: '#e1f6ff' },
+  toasty: { portraitKey: 'toastyCameo', lines: ['TOASTY!'], textSize: 34, border: '#ffb64d', ink: '#ffe790' },
+  death: { portraitKey: 'deathCameo', lines: ['YO CREO QUE', 'SE MURIO!'], textSize: 23, border: '#71caff', ink: '#e1f6ff' },
 };
 
 function drawCameo(ctx, kind, age, reducedMotion, minimumTop) {
-  const { image, lines, textSize, border, ink } = CAMEOS[kind];
+  const { portraitKey, lines, textSize, border, ink } = CAMEOS[kind];
   const entrance = Math.min(age / ENTER_DURATION, 1);
   const leaving = Math.max(0, (age - EXIT_START) / EXIT_DURATION);
   const top = Math.max(85, minimumTop);
@@ -52,7 +52,7 @@ function drawCameo(ctx, kind, age, reducedMotion, minimumTop) {
   ctx.stroke();
   ctx.restore();
 
-  const portrait = Assets[image];
+  const portrait = Assets[portraitKey];
   if (portrait) {
     const scale = 134 / Math.max(portrait.naturalWidth, portrait.naturalHeight);
     const width = portrait.naturalWidth * scale;

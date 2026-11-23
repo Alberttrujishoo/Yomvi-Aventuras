@@ -694,6 +694,7 @@ class Game {
   }
 
   showToastyCameo() {
+    if (!this.player?.alive) return;
     this.toastyCameoAge = 0;
     Sound.sfx('toastyCameo');
   }

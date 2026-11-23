@@ -389,12 +389,13 @@ const Assets = {
     this.specialEffect = await loadImage('special-effect.webp');
   },
 
-  async loadToastyCameo() {
-    this.toastyCameo = await loadImage('toasty-cameo.webp');
-  },
-
-  async loadDeathCameo() {
-    this.deathCameo = await loadImage('death-cameo.webp');
+  async loadCameos() {
+    await Promise.all([
+      ['toastyCameo', 'toasty-cameo.webp'],
+      ['deathCameo', 'death-cameo.webp'],
+    ].map(async ([key, filename]) => {
+      this[key] = await loadImage(filename);
+    }));
   },
 
   loadBoss(stageId, filename) {
