@@ -17,6 +17,7 @@ function playCreatorIntro(onFinish) {
     finished = true;
     clearTimeout(safety);
     controller.abort();
+    skip.hidden = true;
     hint.classList.remove('show');
     video.pause();
     video.removeAttribute('src');

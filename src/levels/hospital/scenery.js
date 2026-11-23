@@ -5,9 +5,9 @@ const HOSPITAL_HALL_START = 2600;
 const HOSPITAL_ROOM_START = 5600;
 
 const ZONES2 = [
-  { start: 0, end: 2600, key: 'reception', name: 'RECEPCIÓN / SALA DE ESPERA', sub: 'HOSPITAL GENERAL · MARACAIBO', music: 'hospital' },
-  { start: 2600, end: 5600, key: 'hallway', name: 'PASILLO CENTRAL', sub: 'EMERGENCIA · RADIOLOGÍA · HABITACIONES', music: 'hospital' },
-  { start: 5600, end: 8000, key: 'patient', name: 'HABITACIÓN 302', sub: 'ALA ESTE · ARENA FINAL', music: 'boss2' },
+  { start: 0, end: 2600, color: '#8fe6ff', key: 'reception', name: 'RECEPCIÓN / SALA DE ESPERA', sub: 'HOSPITAL GENERAL · MARACAIBO', music: 'hospital' },
+  { start: 2600, end: 5600, color: '#8fe6ff', key: 'hallway', name: 'PASILLO CENTRAL', sub: 'EMERGENCIA · RADIOLOGÍA · HABITACIONES', music: 'hospital' },
+  { start: 5600, end: 8000, color: '#ff8a3d', key: 'patient', name: 'HABITACIÓN 302', sub: 'ALA ESTE · ARENA FINAL', music: 'boss2' },
 ];
 
 function hospitalSign(g, label, x, y, w, h, color) {
@@ -960,4 +960,22 @@ function drawHospitalOverlays(stage, ctx, camX, time) {
    STAGE 2 BOSS — CRYPTOCINO
    ============================================================ */
 
-export { ZONES2, buildHallway, buildHospitalGate, buildHospitalProps, buildPatientRoom, buildReception, drawHospitalOverlays };
+const hospitalScenery = {
+  zones: ZONES2,
+  layers: ['hospitalLights', 'hospitalSigns', 'ecgMonitors', 'ivDrips'],
+  backgrounds: [buildReception, buildHallway, buildPatientRoom],
+  buildProps: buildHospitalProps,
+  buildGate: buildHospitalGate,
+  gates: [
+    [2450, 'EMERGENCIA', 'RECEPCIÓN · HOSPITAL GENERAL', '#8fe6ff'],
+    [5450, 'HABITACIONES', 'PISO 3 · ALA ESTE', '#a7f3d0'],
+  ],
+  itemPool: ['firstaid', 'juice', 'pastelito'],
+  drawOverlays: drawHospitalOverlays,
+  markers: {
+    positions: [[2680, '#8fe6ff'], [5680, '#a7f3d0']],
+    y: 450, margin: 120, opacity: 0.30, speed: 3, pulse: 0.08,
+  },
+};
+
+export { hospitalScenery };

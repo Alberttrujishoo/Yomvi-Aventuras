@@ -1,10 +1,10 @@
-import { drawPixelNoise, makeBackdrop } from '../../engine/canvas.js';
-import { TAU } from '../../engine/math.js';
+import { drawPixelNoise, makeBackdrop, makeCanvas } from '../../engine/canvas.js';
+import { CFG, TAU, chance } from '../../engine/math.js';
 
 const ZONES = [
-  { start: 0, end: 3200, key: 'mall', name: 'PASILLO CENTRAL', sub: 'GALERÍAS MALL · MARACAIBO', music: 'mall' },
-  { start: 3200, end: 6000, key: 'ice', name: 'PISTA DE HIELO', sub: 'ZONA RESBALADIZA', music: 'ice' },
-  { start: 6000, end: 9200, key: 'arcade', name: 'ARCADE / VIDEOJUEGOS', sub: 'ARENA FINAL · ARTHAS', music: 'arcade' },
+  { start: 0, end: 3200, color: '#ffd166', key: 'mall', name: 'PASILLO CENTRAL', sub: 'GALERÍAS MALL · MARACAIBO', music: 'mall' },
+  { start: 3200, end: 6000, color: '#5ad2ff', key: 'ice', name: 'PISTA DE HIELO', sub: 'ZONA RESBALADIZA', music: 'ice' },
+  { start: 6000, end: 9200, color: '#ff5fae', key: 'arcade', name: 'ARCADE / VIDEOJUEGOS', sub: 'ARENA FINAL · ARTHAS', music: 'arcade' },
 ];
 
 function neonText(g, str, x, y, size, color, glow = 18, align = 'center') {
@@ -844,4 +844,373 @@ function buildArcade(stage) {
   return g.canvas;
 }
 
-export { ZONES, buildArcade, buildMall, buildRink };
+/* A doorway that masks the seam between two pre-rendered zones. */
+function buildMallGate(stage, label, sub, color) {
+  const w = 300, h = 540;
+  const c = makeCanvas(w, h);
+  const g = c.getContext('2d');
+
+  // dark portal interior (covers the hard background cut)
+  const inner = g.createLinearGradient(0, 70, 0, 330);
+  inner.addColorStop(0, '#0a0a18');
+  inner.addColorStop(0.55, '#111a2c');
+  inner.addColorStop(1, '#070610');
+  g.fillStyle = inner;
+  g.fillRect(34, 0, 232, 330);
+
+  // glass sheen inside the portal
+  g.save();
+  g.globalAlpha = 0.10;
+  g.fillStyle = '#ffffff';
+  g.beginPath();
+  g.moveTo(48, 0);
+  g.lineTo(104, 0);
+  g.lineTo(60, 330);
+  g.lineTo(34, 330);
+  g.closePath();
+  g.fill();
+  ctxGlowLines: {
+    g.globalAlpha = 0.25;
+    g.strokeStyle = color;
+    for (let y = 150; y < 320; y += 26) {
+      g.beginPath();
+      g.moveTo(46, y);
+      g.lineTo(254, y);
+      g.stroke();
+    }
+  }
+  g.restore();
+
+  // pillars
+  for (const px of [0, 264]) {
+    g.fillStyle = '#241a36';
+    g.fillRect(px, 0, 36, 330);
+    g.fillStyle = '#3b2a58';
+    g.fillRect(px + 4, 0, 8, 330);
+    g.fillStyle = '#140e22';
+    g.fillRect(px + 28, 0, 8, 330);
+    g.fillStyle = color;
+    g.globalAlpha = 0.55;
+    g.fillRect(px + (px === 0 ? 33 : 0), 70, 3, 248);
+    g.globalAlpha = 1;
+  }
+
+  // header beam
+  g.fillStyle = '#170f26';
+  g.fillRect(0, 62, 300, 72);
+  g.fillStyle = '#2a1b44';
+  g.fillRect(4, 66, 292, 64);
+  g.strokeStyle = color;
+  g.globalAlpha = 0.65;
+  g.lineWidth = 2;
+  g.strokeRect(8, 70, 284, 56);
+  g.globalAlpha = 1;
+
+  g.save();
+  g.shadowColor = color;
+  g.shadowBlur = 18;
+  g.fillStyle = color;
+  g.font = '900 21px "Arial Black", sans-serif';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillText(label, 150, 94);
+  g.shadowBlur = 0;
+  g.fillStyle = '#e8e0ff';
+  g.font = 'bold 8px "Courier New", monospace';
+  g.fillText(sub, 150, 114);
+  g.restore();
+
+  // marquee bulbs
+  for (let x = 16; x < 290; x += 22) {
+    g.fillStyle = x % 44 === 16 ? color : '#ffe066';
+    g.globalAlpha = 0.85;
+    g.fillRect(x, 60, 4, 4);
+    g.fillRect(x, 132, 4, 4);
+  }
+  g.globalAlpha = 1;
+
+  // threshold
+  g.fillStyle = '#0d0918';
+  g.fillRect(28, 314, 244, 14);
+  g.fillStyle = color;
+  g.globalAlpha = 0.8;
+  g.fillRect(34, 316, 232, 3);
+  g.globalAlpha = 0.18;
+  g.fillRect(34, 319, 232, 16);
+  g.globalAlpha = 1;
+
+  // warning chevrons on the floor edge
+  g.fillStyle = '#ffe066';
+  for (let i = 0; i < 4; i++) {
+    g.globalAlpha = 0.4;
+    g.fillRect(110 + i * 22, 322, 10, 3);
+  }
+  g.globalAlpha = 1;
+
+  // pass-through chevrons + floor light spill
+  g.save();
+  g.globalAlpha = 0.30;
+  g.strokeStyle = color;
+  g.lineWidth = 7;
+  g.lineCap = 'square';
+  for (let i = 0; i < 2; i++) {
+    const ox = 112 + i * 30;
+    g.beginPath();
+    g.moveTo(ox, 230);
+    g.lineTo(ox + 26, 256);
+    g.lineTo(ox, 282);
+    g.stroke();
+  }
+  const spill = g.createLinearGradient(0, 322, 0, 390);
+  spill.addColorStop(0, color + '55');
+  spill.addColorStop(1, 'rgba(0,0,0,0)');
+  g.globalAlpha = 1;
+  g.fillStyle = spill;
+  g.fillRect(28, 322, 244, 66);
+  g.restore();
+
+  return c;
+}
+
+function buildMallProps(stage) {
+  // ---- Zone 1: mall corridors (0..3200) ----
+  stage.addProp('palm', 330, 352);
+  stage.addProp('bench', 520, 432);
+  stage.addProp('trash', 610, 470);
+  stage.addProp('planter', 735, 348);
+  stage.addProp('palm', 880, 350);
+  stage.addProp('bench', 980, 400);
+  stage.addProp('trash', 1062, 360);
+  stage.addProp('crate', 1130, 456);
+  stage.addProp('planter', 1265, 358);
+  stage.addProp('bench', 1420, 448);
+  stage.addProp('palm', 1510, 350);
+  stage.addProp('trash', 1555, 480);
+  stage.addProp('palm', 1750, 350);
+  stage.addProp('bench', 1900, 430);
+  stage.addProp('trash', 2010, 468);
+  stage.addProp('planter', 2120, 352);
+  stage.addProp('palm', 2260, 350);
+  stage.addProp('crate', 2350, 440);
+  stage.addProp('bench', 2480, 400);
+  stage.addProp('trash', 2600, 474);
+  stage.addProp('planter', 2720, 354);
+  stage.addProp('palm', 2840, 350);
+  stage.addProp('bench', 2950, 445);
+
+  // ---- Zone 2: ice rink (3200..6000) ----
+  stage.addProp('bench', 3430, 430);
+  stage.addProp('trash', 3550, 464);
+  stage.addProp('planter', 3680, 352);
+  stage.addProp('bench', 3820, 380);
+  stage.addProp('palm', 3960, 350);
+  stage.addProp('trash', 4100, 470);
+  stage.addProp('crate', 4220, 430);
+  stage.addProp('planter', 4360, 352);
+  stage.addProp('bench', 4500, 400);
+  stage.addProp('palm', 4640, 352);
+  stage.addProp('trash', 4780, 470);
+  stage.addProp('bench', 4920, 420);
+  stage.addProp('planter', 5060, 352);
+  stage.addProp('palm', 5200, 350);
+  stage.addProp('crate', 5340, 440);
+  stage.addProp('bench', 5480, 390);
+  stage.addProp('trash', 5620, 470);
+  stage.addProp('planter', 5750, 352);
+
+  // ---- Zone 3: arcade (6000..9200) ----
+  stage.addProp('crate', 6280, 440);
+  stage.addProp('trash', 6400, 480);
+  stage.addProp('stool', 6540, 470);
+  stage.addProp('stool', 6700, 386);
+  stage.addProp('stool', 6860, 472);
+  stage.addProp('crate', 7020, 440);
+  stage.addProp('stool', 7180, 470);
+  stage.addProp('crate', 7340, 440);
+  stage.addProp('trash', 7480, 474);
+  stage.addProp('stool', 8420, 400);
+  stage.addProp('crate', 8560, 440);
+  stage.addProp('trash', 8700, 470);
+  stage.addProp('stool', 8840, 386);
+  stage.addProp('crate', 8980, 440);
+  stage.addProp('trash', 9100, 474);
+}
+
+function drawMallOverlays(stage, ctx, camX, time) {
+  // ---- live overlays ----
+  // Zone 1 neon / light pulse
+  for (const s of stage.neonSigns) {
+    if (s.zone === 1 || s.zone === 2) continue;
+    const sx = s.x - camX;
+    if (sx < -s.r || sx > CFG.W + s.r) continue;
+    if (s.type === 'light') {
+      const a = 0.16 + Math.sin(time * 2.3 + s.x) * 0.05;
+      ctx.globalAlpha = a;
+      ctx.fillStyle = s.color;
+      ctx.beginPath();
+      ctx.ellipse(sx, s.y + 60, s.r, s.r * 0.7, 0, 0, TAU);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    } else if (s.type === 'sign') {
+      const flicker = Math.sin(time * 7 + s.x * 0.1) > 0.94 ? 0.35 : 1;
+      ctx.globalAlpha = 0.16 * flicker;
+      ctx.fillStyle = s.color;
+      ctx.shadowColor = s.color;
+      ctx.shadowBlur = 24;
+      ctx.beginPath();
+      ctx.ellipse(sx, s.y, s.r, s.r * 0.55, 0, 0, TAU);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // Zone 2 skaters + ice sparkle
+  const rinkVisible = camX + CFG.W > 3200 && camX < 6000;
+  if (rinkVisible) {
+    for (const s of stage.skaters) {
+      const wx = 3200 + s.x;
+      const sx = wx - camX;
+      if (sx < -60 || sx > CFG.W + 60) continue;
+      drawSkater(ctx, sx, 245 + s.lane * 26, s.dir, time + s.phase);
+    }
+    // shimmer on the ice
+    ctx.save();
+    for (let i = 0; i < 10; i++) {
+      const wx = 3250 + ((i * 137 + time * 22) % 2600);
+      const sx = wx - camX;
+      if (sx < -20 || sx > CFG.W + 20) continue;
+      ctx.globalAlpha = 0.12 + Math.sin(time * 2 + i) * 0.06;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(sx, 170 + (i * 31) % 110, 26, 2);
+    }
+    ctx.restore();
+  }
+
+  // Zone 3 CRT screens + floor beams
+  if (camX + CFG.W > 6000) {
+    for (const crt of stage.crtScreens) {
+      const sx = crt.x - camX;
+      if (sx < -crt.w || sx > CFG.W) continue;
+      const flick = 0.6 + Math.sin(time * 12 + crt.phase) * 0.2 + (Math.sin(time * 31 + crt.phase * 3) > 0.85 ? 0.2 : 0);
+      ctx.save();
+      ctx.globalAlpha = 0.30 * flick;
+      ctx.fillStyle = crt.color;
+      ctx.shadowColor = crt.color;
+      ctx.shadowBlur = 16;
+      ctx.fillRect(sx, crt.y, crt.w, crt.h);
+      ctx.globalAlpha = 0.65 * flick;
+      ctx.fillStyle = '#eaffff';
+      ctx.fillRect(sx + 4, crt.y + 4 + (time * 40 + crt.phase * 9) % (crt.h - 12), crt.w - 8, 2);
+      ctx.restore();
+    }
+
+    // sweeping spotlights
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 3; i++) {
+      const bx = ((time * 36 + i * 300) % 3000) + 6100;
+      const sx = bx - camX;
+      if (sx < -200 || sx > CFG.W + 200) continue;
+      const grad = ctx.createLinearGradient(sx, 60, sx + 90, 500);
+      grad.addColorStop(0, ['rgba(255,70,150,0.10)', 'rgba(80,220,255,0.10)', 'rgba(255,220,80,0.09)'][i]);
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(sx - 30, 50);
+      ctx.lineTo(sx + 30, 50);
+      ctx.lineTo(sx + 170, 520);
+      ctx.lineTo(sx + 60, 520);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+
+    // neon marquee pulse
+    for (const s of stage.neonSigns) {
+      if (s.zone !== 2) continue;
+      const sx = s.x - camX;
+      if (sx < -s.r || sx > CFG.W + s.r) continue;
+      const a = 0.10 + (Math.sin(time * 4 + s.x) * 0.5 + 0.5) * 0.12;
+      ctx.globalAlpha = a;
+      ctx.fillStyle = s.color;
+      ctx.beginPath();
+      ctx.ellipse(sx, s.y, s.r, s.r * 0.55, 0, 0, TAU);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+
+}
+
+function drawSkater(ctx, x, y, dir, t) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.scale(dir, 1);
+  const lean = Math.sin(t * 3) * 0.06;
+  ctx.rotate(lean);
+  ctx.globalAlpha = 0.72;
+  ctx.fillStyle = '#122a44';
+  // body
+  ctx.fillRect(-5, -34, 10, 18);
+  ctx.fillRect(-4, -42, 8, 8);
+  // scarf
+  ctx.fillStyle = '#ff6b9d';
+  ctx.fillRect(-10, -36, 8, 3);
+  ctx.fillRect(-16, -34, 8, 2);
+  // legs
+  ctx.fillStyle = '#0c1d31';
+  ctx.fillRect(-6, -17, 4, 14);
+  ctx.fillRect(2, -17, 4, 14);
+  // skates
+  ctx.fillStyle = '#d9ecff';
+  ctx.fillRect(-8, -4, 8, 3);
+  ctx.fillRect(0, -4, 8, 3);
+  ctx.globalAlpha = 0.3;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(-22, -1, 20, 1);
+  ctx.restore();
+}
+
+function updateMall(stage, dt) {
+  for (const s of stage.skaters) {
+    s.x += s.dir * s.speed * dt;
+    if (s.x > 2580) { s.x = 2580; s.dir = -1; s.phase += 0.4; }
+    if (s.x < 160) { s.x = 160; s.dir = 1; s.phase += 0.4; }
+  }
+}
+
+function initMall(stage) {
+  stage.skaters = [
+    { x: 240, dir: 1, speed: 34, lane: 0, phase: 0 },
+    { x: 760, dir: -1, speed: 26, lane: 1, phase: 2.1 },
+    { x: 1120, dir: 1, speed: 42, lane: 0, phase: 4.2 },
+    { x: 1660, dir: -1, speed: 30, lane: 1, phase: 1.3 },
+    { x: 2140, dir: 1, speed: 36, lane: 0, phase: 3.4 },
+    { x: 2480, dir: -1, speed: 24, lane: 1, phase: 5.2 },
+  ];
+}
+
+const mallScenery = {
+  zones: ZONES,
+  layers: ['neonSigns', 'crtScreens'],
+  init: initMall,
+  backgrounds: [buildMall, buildRink, buildArcade],
+  buildProps: buildMallProps,
+  buildGate: buildMallGate,
+  gates: [
+    [3050, 'PISTA DE HIELO', 'ZONA FRÍA · RESBALADIZO', '#8fd8ff'],
+    [5850, 'ARCADE', 'VIDEOJUEGOS · ARENA FINAL', '#ff5fae'],
+  ],
+  itemPool: ['pastelito', 'pastelito', 'tequeño', 'soda'],
+  pickDrop: () => chance(0.25) ? 'soda' : null,
+  isSlippery: (x) => x > 3300 && x < 5300,
+  drawOverlays: drawMallOverlays,
+  update: updateMall,
+  markers: {
+    positions: [[3380, '#8fd8ff'], [6180, '#ff6b9d']],
+    y: 452, margin: 100, opacity: 0.36, speed: 3, pulse: 0.1,
+  },
+};
+
+export { mallScenery };

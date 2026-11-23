@@ -5,9 +5,6 @@ const CFG = {
   FLOOR_BOTTOM: 492,
   DEPTH_TOL: 22,
   GRAVITY: 1500,
-  STAGE_W: 9200,
-  STAGE2_W: 8000,
-  STAGE3_W: 8400,
   CHAR_SCALE: 1.2,
 };
 

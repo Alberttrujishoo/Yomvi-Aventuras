@@ -20,6 +20,10 @@ import { HUD } from '../ui/hud.js';
    Camera-locked waves, 2.5D depth sorting, arcade flow.
    ============================================================ */
 
+const SIMULATION_STEP = 1 / 60;
+const MAX_CATCH_UP = 6 * SIMULATION_STEP;
+const MOBILE_FRAME_MS = 1000 / 60;
+
 class Game {
   constructor(canvas, { compact = false } = {}) {
     this.canvas = canvas;
@@ -33,7 +37,9 @@ class Game {
 
     this.state = 'intro'; // intro | title | playing | paused | continue | victory
     this.time = 0;
-    this.lastTs = 0;
+    this.lastTs = null;
+    this.simulationTime = 0;
+    this.viewBlocks = new Set();
     this.score = 0;
     this.hiScore = this.loadHi();
     this.kills = 0;
@@ -53,7 +59,7 @@ class Game {
     this.enemySprites = Art.enemies;
     this.paintTitleAux = 0;
     this.lastRenderedState = null;
-    this.lastRenderTime = -Infinity;
+    this.nextRenderTime = null;
     this.pendingStageMedia = new Map();
     this.applyAssets();
 
@@ -81,7 +87,6 @@ class Game {
 
   startLoop() {
     this.ready = true;
-    this.lastTs = 0;
     requestAnimationFrame(this.loop);
   }
 
@@ -99,29 +104,59 @@ class Game {
   }
 
   /* ---------------- main loop ---------------- */
-  loop(ts) {
-    if (!this.lastTs) this.lastTs = ts;
-    let dt = (ts - this.lastTs) / 1000;
-    this.lastTs = ts;
-    if (!Number.isFinite(dt) || dt <= 0) dt = 1 / 60;
-    const elapsed = Math.min(dt, 0.25);
-    dt = Math.min(dt, 1 / 30);
-    this.time += elapsed;
+  get viewBlocked() { return this.viewBlocks.size > 0; }
 
-    if (Input.hit('mute')) {
-      this.muted = Sound.toggleMute();
+  setViewBlocked(reason, blocked) {
+    if (this.viewBlocks.has(reason) === blocked) return;
+    const wasBlocked = this.viewBlocked;
+    if (blocked) this.viewBlocks.add(reason);
+    else this.viewBlocks.delete(reason);
+    if (this.viewBlocked === wasBlocked) return;
+
+    this.lastTs = null;
+    this.simulationTime = 0;
+    this.nextRenderTime = null;
+    Input.clear();
+    if (this.viewBlocked) {
+      if (this.state === 'playing') this.state = 'paused';
+      Sound.suspend();
+    }
+  }
+
+  loop(ts) {
+    if (this.viewBlocked) {
+      TouchControls.sync();
+      requestAnimationFrame(this.loop);
+      return;
     }
 
-    this.update(dt, elapsed);
-    const staticFrame = this.state === 'intro' || this.state === 'title' || this.state === 'paused';
+    const elapsed = this.lastTs === null ? SIMULATION_STEP : (ts - this.lastTs) / 1000;
+    this.lastTs = ts;
+    this.simulationTime = Math.min(MAX_CATCH_UP, this.simulationTime + Math.max(0, elapsed));
+
+    while (this.simulationTime + 1e-9 >= SIMULATION_STEP) {
+      this.simulationTime -= SIMULATION_STEP;
+      this.time += SIMULATION_STEP;
+      if (Input.hit('mute')) this.muted = Sound.toggleMute();
+      this.update(SIMULATION_STEP);
+      Input.endFrame();
+    }
+
     TouchControls.sync();
-    const renderDue = this.renderScale === 1 || ts - this.lastRenderTime >= 15;
-    if (this.lastRenderedState !== this.state || (!staticFrame && renderDue)) {
+    const stateChanged = this.lastRenderedState !== this.state;
+    const staticFrame = this.state === 'intro' || this.state === 'title' || this.state === 'paused';
+    const renderDue = this.renderScale === 1 || this.nextRenderTime === null || ts + 0.25 >= this.nextRenderTime;
+    if (stateChanged || (!staticFrame && renderDue)) {
       this.render();
       this.lastRenderedState = this.state;
-      this.lastRenderTime = ts;
+      if (stateChanged || this.nextRenderTime === null) {
+        this.nextRenderTime = ts + MOBILE_FRAME_MS;
+      } else {
+        // Keep the presentation cadence on 90/120 Hz displays without rendering catch-up frames.
+        const missed = Math.max(0, Math.floor((ts - this.nextRenderTime) / MOBILE_FRAME_MS));
+        this.nextRenderTime += (missed + 1) * MOBILE_FRAME_MS;
+      }
     }
-    Input.endFrame();
     requestAnimationFrame(this.loop);
   }
 
@@ -198,7 +233,7 @@ class Game {
     this.stageId = stageId;
     Art.buildLevel(stageId);
     this.applyAssets();
-    this.stage = new Stage(this, stageId);
+    this.stage = new Stage(this, level.scenery);
     this.state = 'playing';
 
     if (preservePlayer && this.player) {
@@ -231,6 +266,8 @@ class Game {
     Input.flush();
   }
 
+  get level() { return LEVELS[this.stageId]; }
+
   prepareStageMedia(stageId) {
     if (this.pendingStageMedia.has(stageId)) return this.pendingStageMedia.get(stageId);
 
@@ -241,7 +278,7 @@ class Game {
         this.setTrackForZone(true);
       }
     };
-    const bossSprite = ['bossSprite', 'boss2Sprite', 'boss3Sprite'][stageId - 1];
+    const { bossSprite } = level;
     const media = Promise.all([
       Assets.loadBoss(stageId, level.bossSheet).then((sprite) => {
         if (sprite) this[bossSprite] = sprite;
@@ -324,14 +361,12 @@ class Game {
     this.setBossMusic(true);
     if (Sound.hasExternal('bossMp3')) Sound.restartExternal();
 
-    if (this.stageId === 2) {
-      this.banner('CRYPTOCINO', 'EL REY CRYPTO · FASE 1', '#ff8a3d', 2.8);
-    } else if (this.stageId === 3) {
-      this.banner('GAYTELOS', 'EL REY DE LA BURGER ROOM · FASE 1', '#ff5fae', 2.8);
-    } else {
-      this.banner('ARTHAS - JORGE SALINAS', 'EL REY DEL ARCADE · FASE 1', '#ff2e63', 2.8);
-    }
+    this.banner(...this.level.bossBanner);
     Sound.sfx('enrage');
+  }
+
+  awardBossDefeat(boss, textY) {
+    this.addScore(this.level.bossDefeatScore, boss.x, textY);
   }
 
   onBossDefeated() {
@@ -344,28 +379,15 @@ class Game {
     Input.flush();
     Sound.stopMusic();
 
-    if (this.stageId === 1) {
-      this.addScore(10000);
+    this.addScore(this.level.stageClearScore);
+    if (this.level.nextStage) {
       this.stageClearStats = {
         score: this.score,
-        level: this.player ? this.player.level : 1,
+        level: this.player?.level ?? 1,
         kills: this.kills,
         time: this.stageTime,
       };
-      this.stageClearTime = 6.5;
-      this.stageClearMax = 6.5;
-    } else if (this.stageId === 2) {
-      this.addScore(15000);
-      this.stageClearStats = {
-        score: this.score,
-        level: this.player ? this.player.level : 1,
-        kills: this.kills,
-        time: this.stageTime,
-      };
-      this.stageClearTime = 6.5;
-      this.stageClearMax = 6.5;
-    } else {
-      this.addScore(25000);
+      this.stageClearTime = this.stageClearMax;
     }
 
     this.hiScore = Math.max(this.hiScore, this.score);
@@ -381,7 +403,7 @@ class Game {
   }
 
   /* ---------------- input-sensitive update ---------------- */
-  update(dt, elapsed = dt) {
+  update(dt) {
     Sound.update();
 
     // Creator intro: keep the title and all gameplay input on hold.
@@ -438,7 +460,7 @@ class Game {
     }
 
     if (this.state === 'briefing') {
-      this.briefingTime -= elapsed;
+      this.briefingTime -= dt;
       if (Input.hit('start') || this.briefingTime <= 0) {
         this.briefingTime = 0;
         this.beginStage(1);
@@ -447,10 +469,10 @@ class Game {
     }
 
     if (this.state === 'stageclear') {
-      this.stageClearTime -= elapsed;
+      this.stageClearTime -= dt;
       if (this.stageClearTime <= 0) {
         this.stageClearTime = 0;
-        this.beginStage(this.stageId + 1, { preservePlayer: true });
+        this.beginStage(this.level.nextStage, { preservePlayer: true });
       }
       return;
     }
@@ -465,7 +487,7 @@ class Game {
     }
 
     if (this.state === 'continue') {
-      this.continueTime -= elapsed;
+      this.continueTime -= dt;
       if (Input.hit('start')) {
         Input.flush();
         this.continueGame();
@@ -486,11 +508,11 @@ class Game {
     }
 
     if (this.state === 'teaser') {
-      this.teaserTime -= elapsed;
+      this.teaserTime -= dt;
       if (this.teaserTime <= 0) {
         this.teaserTime = 0;
         Input.flush();
-        if (this.stageId === 3) {
+        if (!this.level.nextStage) {
           this.state = 'victory';
           Sound.sfx('victory');
         } else {
@@ -597,12 +619,7 @@ class Game {
     const z = this.stage.zoneAt(this.player.x);
     if (z !== this.currentZone) {
       this.currentZone = z;
-      const col = this.stageId === 2
-        ? (z.key === 'patient' ? '#ff8a3d' : '#8fe6ff')
-        : this.stageId === 3
-          ? (z.key === 'burger' ? '#ff5fae' : z.key === 'alley' ? '#ffd166' : '#ffb347')
-          : (z.key === 'arcade' ? '#ff5fae' : z.key === 'ice' ? '#5ad2ff' : '#ffd166');
-      this.banner(z.name, z.sub, col, 2.8);
+      this.banner(z.name, z.sub, z.color, 2.8);
       this.setTrackForZone();
     }
   }
@@ -613,7 +630,7 @@ class Game {
     if (Sound.hasExternal('bossMp3')) {
       Sound.setTrack('bossMp3', force);
     } else {
-      Sound.setTrack(this.stageId === 3 ? 'burger' : this.stageId === 2 ? 'boss2' : 'boss', force);
+      Sound.setTrack(this.level.bossFallbackTrack, force);
     }
   }
 
@@ -627,31 +644,9 @@ class Game {
       return;
     }
 
-    if (this.stageId === 2) {
-      if (Sound.hasExternal('level2')) {
-        // user-provided Stage 2 theme (DDR Yomvi 2 long.mp3)
-        Sound.setTrack('level2', force);
-      } else {
-        Sound.setTrack('hospital', force);
-      }
-      return;
-    }
-    if (this.stageId === 3) {
-      if (Sound.hasExternal('level3')) {
-        // user-provided Stage 3 theme (DDR Yomvi 3 long.mp3)
-        Sound.setTrack('level3', force);
-      } else {
-        Sound.setTrack('street', force);
-      }
-      return;
-    }
-    const z = this.stage.zoneAt(this.player.x);
-    if (Sound.hasExternal('level')) {
-      // user-provided level theme (DDR Yomvi 1 long.mp3)
-      Sound.setTrack('level', force);
-    } else {
-      Sound.setTrack(z.key === 'ice' ? 'ice' : 'mall', force);
-    }
+    const { track, fallbackTrack } = this.level;
+    const zone = this.stage.zoneAt(this.player.x);
+    Sound.setTrack(Sound.hasExternal(track) ? track : fallbackTrack(zone), force);
   }
 
   updateCombo(dt) {
@@ -738,7 +733,7 @@ class Game {
       if (l.boss) {
         if (!this.bossStarted) {
           this.bossStarted = true;
-          const BossType = LEVELS[this.stageId].boss;
+          const BossType = this.level.boss;
           this.boss = new BossType(this, l.camX + CFG.W + 40, 438);
           this.boss.introTarget = l.camX + CFG.W * 0.62;
         }
@@ -793,16 +788,10 @@ class Game {
     }
     this.enemies = this.enemies.filter(e => !e.remove);
 
-    this.banner(
-      lock.boss
-        ? (this.stageId === 3 ? 'BURGER ROOM' : this.stageId === 2 ? 'HABITACIÓN 302' : 'ARENA FINAL')
-        : (this.stageId === 3 ? '¡EMBOSCADA CALLEJERA!' : this.stageId === 2 ? '¡EMBOSCADA HOSPITALARIA!' : '¡EMBOSCADA!'),
-      lock.boss
-        ? (this.stageId === 3 ? 'GAYTELOS TE ESPERA' : this.stageId === 2 ? 'CRYPTOCINO TE ESPERA' : 'EL REY DEL ARCADE TE ESPERA')
-        : 'DERROTA A TODOS PARA AVANZAR',
-      lock.boss ? (this.stageId === 3 ? '#ff5fae' : this.stageId === 2 ? '#ff8a3d' : '#ff5fae') : '#ff5a6e',
-      2.4
-    );
+    const banner = lock.boss
+      ? this.level.arenaBanner
+      : [this.level.ambushTitle, 'DERROTA A TODOS PARA AVANZAR', '#ff5a6e'];
+    this.banner(...banner, 2.4);
     Sound.sfx('token');
   }
 

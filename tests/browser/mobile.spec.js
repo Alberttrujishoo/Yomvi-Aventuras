@@ -58,3 +58,41 @@ test('plays the intro if the host sends a complete MP4 for range requests', asyn
   await page.getByRole('button', { name: 'Omitir intro' }).tap();
   await expect.poll(() => page.evaluate(() => GAME.state)).toBe('title');
 });
+
+test('portrait freezes briefing and continue timers and blocks keyboard resume', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Omitir intro' }).tap();
+  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('title');
+  await page.touchscreen.tap(420, 190);
+  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('briefing');
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator('#rotateHint')).toBeVisible();
+  await page.evaluate(() => { GAME.briefingTime = 0.2; });
+  const time = await page.evaluate(() => GAME.time);
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => [GAME.state, GAME.briefingTime, GAME.time]))
+    .toEqual(['briefing', 0.2, time]);
+
+  await page.setViewportSize({ width: 844, height: 390 });
+  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('playing');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('paused');
+  await page.keyboard.press('Enter');
+  expect(await page.evaluate(() => GAME.state)).toBe('paused');
+  await page.setViewportSize({ width: 844, height: 390 });
+  await expect(page.locator('#rotateHint')).toBeHidden();
+  await page.touchscreen.tap(420, 190);
+  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('playing');
+
+  await page.evaluate(() => GAME.startContinue());
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator('#rotateHint')).toBeVisible();
+  await page.evaluate(() => { GAME.continueTime = 0.2; });
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => [GAME.state, GAME.continueTime])).toEqual(['continue', 0.2]);
+
+  await page.setViewportSize({ width: 844, height: 390 });
+  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('title');
+});

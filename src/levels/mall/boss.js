@@ -425,7 +425,7 @@ class Boss {
     this.vz = 280;
     this.vx = 0;
     this.z = Math.max(this.z, 2);
-    this.game.addScore(6000, this.x, this.y - 130);
+    this.game.awardBossDefeat(this, this.y - 130);
     this.game.shake(26, 1.2);
     Sound.sfx('slam');
     for (let i = 0; i < 8; i++) {

@@ -1,13 +1,13 @@
 import { drawPixelNoise, makeBackdrop, makeCanvas, roundRectPath } from '../../engine/canvas.js';
-import { CFG, TAU, rand } from '../../engine/math.js';
+import { CFG, chance, TAU, rand } from '../../engine/math.js';
 
 const STREET_ALLEY_START = 3400;
 const BURGER_ROOM_START = 6000;
 
 const ZONES3 = [
-  { start: 0, end: 3400, key: 'street', name: 'AFUERA DEL GALERÍAS MALL', sub: 'CALLE · NOCHE DE MARACAIBO', music: 'street' },
-  { start: 3400, end: 6000, key: 'alley', name: 'CALLEJÓN DE COMIDA', sub: 'PERROS CALIENTES · HAMBURGUESAS', music: 'street' },
-  { start: 6000, end: 8400, key: 'burger', name: 'BURGER ROOM', sub: 'LA ARENA FINAL · GAYTELOS', music: 'burger' },
+  { start: 0, end: 3400, color: '#ffb347', key: 'street', name: 'AFUERA DEL GALERÍAS MALL', sub: 'CALLE · NOCHE DE MARACAIBO', music: 'street' },
+  { start: 3400, end: 6000, color: '#ffd166', key: 'alley', name: 'CALLEJÓN DE COMIDA', sub: 'PERROS CALIENTES · HAMBURGUESAS', music: 'street' },
+  { start: 6000, end: 8400, color: '#ff5fae', key: 'burger', name: 'BURGER ROOM', sub: 'LA ARENA FINAL · GAYTELOS', music: 'burger' },
 ];
 
 function streetSign(g, label, x, y, w, h, color, sub = '') {
@@ -1080,4 +1080,23 @@ function drawStreetOverlays(stage, ctx, camX, time) {
    GAYTELOS — FINAL BOSS
    ============================================================ */
 
-export { ZONES3, buildBurgerRoom, buildFoodAlley, buildStreetExterior, buildStreetGate, buildStreetProps, drawStreetOverlays };
+const streetScenery = {
+  zones: ZONES3,
+  layers: ['streetLights', 'steamVents', 'bulbStrings', 'streetSigns'],
+  backgrounds: [buildStreetExterior, buildFoodAlley, buildBurgerRoom],
+  buildProps: buildStreetProps,
+  buildGate: buildStreetGate,
+  gates: [
+    [3250, 'CALLEJÓN', 'PERROS · HAMBURGUESAS · NOCHE', '#ffb347'],
+    [5850, 'BURGER ROOM', 'LA ARENA FINAL DE GAYTELOS', '#ff5fae'],
+  ],
+  itemPool: ['burger', 'hotdog', 'pastelito', 'soda'],
+  pickDrop: () => chance(0.55) ? 'burger' : (chance(0.6) ? 'hotdog' : null),
+  drawOverlays: drawStreetOverlays,
+  markers: {
+    positions: [[3310, '#ffb347'], [5920, '#ff5fae']],
+    y: 450, margin: 120, opacity: 0.32, speed: 3.2, pulse: 0.09,
+  },
+};
+
+export { streetScenery };

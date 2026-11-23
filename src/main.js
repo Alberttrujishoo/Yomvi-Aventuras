@@ -33,20 +33,16 @@ import { playCreatorIntro } from './ui/intro.js';
 
   // A user gesture unlocks the Web Audio context (browser autoplay policy).
   const unlockAudio = () => {
+    if (game.viewBlocked) return;
     Sound.init();
     Sound.resume();
   };
   window.addEventListener('keydown', unlockAudio);
   window.addEventListener('pointerdown', unlockAudio);
 
-  document.addEventListener('visibilitychange', () => {
-    game.lastTs = 0;
-    if (document.hidden) {
-      Input.clear();
-      if (game.state === 'playing') game.state = 'paused';
-      Sound.suspend();
-    }
-  });
+  const syncVisibility = () => game.setViewBlocked('hidden', document.hidden);
+  document.addEventListener('visibilitychange', syncVisibility);
+  syncVisibility();
 
   Assets.loadTitle(setStatus).then(() => {
     game.applyAssets();

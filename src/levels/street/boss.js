@@ -493,7 +493,7 @@ class Boss3 {
     this.deadT = 0;
     this.vz = 320;
     this.z = Math.max(this.z, 2);
-    this.game.addScore(25000, this.x, this.y - 160);
+    this.game.awardBossDefeat(this, this.y - 160);
     this.game.shake(30, 1.4);
     this.game.slowmoT = 3.4;
     this.game.flashScreen = 1.0;

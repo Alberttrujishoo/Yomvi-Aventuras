@@ -1,16 +1,17 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const baseURL = 'http://127.0.0.1:4173';
+const externalURL = process.env.YOMVI_BASE_URL;
+const baseURL = externalURL || 'http://127.0.0.1:4173';
 const chromiumPath = process.env.YOMVI_CHROMIUM_PATH;
 
 export default defineConfig({
   testDir: './tests/browser',
   timeout: 45_000,
-  webServer: {
-    command: 'npm run dev -- --dist',
+  webServer: externalURL ? undefined : {
+    command: 'npm run build && npm run dev -- --dist',
     env: { PORT: '4173' },
     url: baseURL,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
   },
   use: { baseURL },
   projects: [

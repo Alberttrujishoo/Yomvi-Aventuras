@@ -64,9 +64,9 @@ const TouchControls = {
 
   updateOrientation() {
     const portrait = window.innerHeight > window.innerWidth;
-    if (portrait && this.isTouch) {
-      this.releaseAll();
-      if (this.game.state === 'playing') this.game.state = 'paused';
+    if (this.isTouch) {
+      if (portrait) this.releaseAll();
+      this.game.setViewBlocked('portrait', portrait);
     }
     document.body.classList.toggle('portrait', portrait);
     document.body.classList.toggle('landscape', !portrait);

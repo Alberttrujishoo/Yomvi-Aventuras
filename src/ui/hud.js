@@ -921,9 +921,10 @@ const HUD = {
       align: 'center', outlineW: 3, spacing: 6, font: FONT_MONO, alpha: alpha * 0.9,
     });
 
-    text(ctx, g.stageId === 3 ? 'GAYTELOS REGRESARA EN' : g.stageId === 2 ? 'CRYPTOCINO REGRESARA EN' : 'ARTHICAS REGRESARA EN', CFG.W / 2, 270, 27, '#efe9ff', {
+    const { name, title, glow } = g.level.teaser;
+    text(ctx, name + ' REGRESARA EN', CFG.W / 2, 270, 27, '#efe9ff', {
       align: 'center', outlineW: 5, outline: '#0b0712', spacing: 2.5,
-      alpha, glow: g.stageId === 3 ? 'rgba(255, 95, 174, 0.6)' : g.stageId === 2 ? 'rgba(255, 138, 61, 0.55)' : 'rgba(90, 210, 255, 0.55)', glowSize: 12,
+      alpha, glow, glowSize: 12,
     });
     text(ctx, 'AMONGOLICUS ENDGAME', CFG.W / 2, 328, 42, UI.goldHot, {
       align: 'center', outlineW: 8, outline: '#1a0a12', spacing: 2.5,
@@ -947,7 +948,7 @@ const HUD = {
     // Keep the player waiting the full teaser: no score, no HUD, no prompts.
     ctx.save();
     ctx.globalAlpha = alpha * 0.35;
-    text(ctx, g.stageId === 3 ? 'EL REY DE LA BURGER ROOM HA CAÍDO' : g.stageId === 2 ? 'EL REY CRYPTO HA CAÍDO' : 'EL REY DEL ARCADE HA CAÍDO', CFG.W / 2, 500, 8, '#8a7aa8', {
+    text(ctx, title + ' HA CAÍDO', CFG.W / 2, 500, 8, '#8a7aa8', {
       align: 'center', outlineW: 2, font: FONT_MONO, spacing: 3,
     });
     ctx.restore();
@@ -1056,8 +1057,8 @@ const HUD = {
       ctx.restore();
     }
 
-    const isFinal = g.stageId === 3;
-    const finalBossSprite = isFinal ? g.boss3Sprite : (g.stageId === 2 ? g.boss2Sprite : g.bossSprite);
+    const isFinal = !g.level.nextStage;
+    const finalBossSprite = g[g.level.bossSprite];
     const finalSubtitle = isFinal
       ? 'JUEGO COMPLETO · GAYTELOS DERROTADO · 3 STAGES A SALVO'
       : g.stageId === 2
