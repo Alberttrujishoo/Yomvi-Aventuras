@@ -2,37 +2,38 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>YOMVI AVENTURAS 1.0 BY AMONGOLICUS PRODUCTIONS</title>
 <meta name="description" content="Conviertete en Yomvi y haz lo necesario para robarte el Dance Masters 2" />
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="AMONGOLICUS PRODUCTIONS" />
 <meta property="og:title" content="YOMVI AVENTURAS 1.0 BY AMONGOLICUS PRODUCTIONS" />
 <meta property="og:description" content="Conviertete en Yomvi y haz lo necesario para robarte el Dance Masters 2" />
-<meta property="og:image" content="MAIN.PNG" />
+<meta property="og:image" content="assets/images/cover.jpg" />
 <meta property="og:image:alt" content="YOMVI AVENTURAS — portada" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="YOMVI AVENTURAS 1.0 BY AMONGOLICUS PRODUCTIONS" />
 <meta name="twitter:description" content="Conviertete en Yomvi y haz lo necesario para robarte el Dance Masters 2" />
-<meta name="twitter:image" content="MAIN.PNG" />
-<link rel="stylesheet" href="css/style.css?v=16" />
+<meta name="twitter:image" content="assets/images/cover.jpg" />
+<link rel="stylesheet" href="styles/game.css" />
 </head>
 <body>
   <div id="stage-wrap">
-    <canvas id="game" width="960" height="540" aria-label="Yomvi Adventures arcade game"></canvas>
+    <canvas id="game" width="960" height="540" aria-label="Juego arcade Yomvi Adventures"></canvas>
 
     <div id="loading">
       <div class="load-inner">
         <div class="load-logo">YOMVI<span>ADVENTURES</span></div>
         <div class="load-bar"><i id="loadFill"></i></div>
-        <div class="load-status" id="loadStatus">CARGANDO PERSONAJE.png / JEFE.PNG / JEFE2.PNG…</div>
-        <div class="load-tip">Consejo: ejecuta <b>start.bat</b> para cargar los sprites PNG.<br />Si no están disponibles, el juego usa pixel-art procedural.</div>
+        <div class="load-status" id="loadStatus">CARGANDO YOMVI ADVENTURES…</div>
+
       </div>
     </div>
   </div>
 
   <div id="intro" class="hidden" aria-hidden="true">
-    <video id="introVideo" src="IMG_7652.MP4" playsinline preload="auto"></video>
+    <video id="introVideo" src="assets/video/intro.mp4" playsinline preload="metadata"></video>
+    <button type="button" id="skipIntro">Omitir intro</button>
     <div id="introHint">PULSA UNA TECLA O TOCA LA PANTALLA PARA ACTIVAR EL SONIDO</div>
   </div>
 
@@ -41,11 +42,11 @@
       <div id="joystickKnob" class="joystick-knob"></div>
     </div>
     <div class="action-cluster">
-      <div class="touch-btn touch-jump" data-action="jump" role="button" aria-label="Saltar">SALTO</div>
-      <div class="touch-btn touch-special" data-action="special" role="button" aria-label="Giro especial">ESP.</div>
-      <div class="touch-btn touch-attack" data-action="attack" role="button" aria-label="Golpear">GOLPE</div>
+      <button type="button" class="touch-btn touch-jump" data-action="jump" aria-label="Saltar">SALTO</button>
+      <button type="button" class="touch-btn touch-special" data-action="special" aria-label="Giro especial">ESP.</button>
+      <button type="button" class="touch-btn touch-attack" data-action="attack" aria-label="Golpear">GOLPE</button>
     </div>
-    <div id="pauseBtn" class="touch-btn touch-pause" role="button" aria-label="Pausa">II</div>
+    <button type="button" id="pauseBtn" class="touch-btn touch-pause" aria-label="Pausa">II</button>
   </div>
 
   <div id="rotateHint">
@@ -54,17 +55,7 @@
     <div class="rotate-sub">YOMVI ADVENTURES SE JUEGA EN HORIZONTAL</div>
   </div>
 
-  <script src="js/core.js?v=16"></script>
-  <script src="js/audio.js?v=16"></script>
-  <script src="js/art.js?v=16"></script>
-  <script src="js/assets.js?v=16"></script>
-  <script src="js/stage.js?v=16"></script>
-  <script src="js/entities.js?v=16"></script>
-  <script src="js/hud.js?v=16"></script>
-  <script src="js/game.js?v=16"></script>
-  <script src="js/hospital.js?v=16"></script>
-  <script src="js/street.js?v=16"></script>
-  <script src="js/touch.js?v=16"></script>
-  <script src="js/boot.js?v=16"></script>
+  <script type="module" src="src/main.js"></script>
+  <noscript>Activa JavaScript para jugar a Yomvi Adventures.</noscript>
 </body>
 </html>
