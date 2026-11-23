@@ -6,15 +6,16 @@ const EXIT_START = 0.94;
 const EXIT_DURATION = 0.23;
 const FEROZ_CAMEO_DURATION = EXIT_START + EXIT_DURATION;
 
-function drawFerozCameo(ctx, age, reducedMotion) {
+function drawFerozCameo(ctx, age, reducedMotion, minimumTop = 0) {
   const entrance = Math.min(age / ENTER_DURATION, 1);
   const leaving = Math.max(0, (age - EXIT_START) / EXIT_DURATION);
+  const top = Math.max(85, minimumTop);
 
   ctx.save();
   ctx.beginPath();
-  ctx.rect(CFG.W - 301, 85, 301, 153);
+  ctx.rect(CFG.W - 301, top, 301, 153);
   ctx.clip();
-  ctx.translate(CFG.W - 25, 222);
+  ctx.translate(CFG.W - 25, top + 137);
   if (!reducedMotion) {
     ctx.translate(260 * (1 - entrance) ** 3 + 240 * leaving ** 2, 0);
     ctx.rotate((1 - entrance) * -0.075 + Math.sin(entrance * Math.PI) * 0.035);

@@ -1,4 +1,4 @@
-import { Input } from './actions.js';
+import { Input, START_SCREEN_LABELS } from './actions.js';
 
 /* ============================================================
    YOMVI ADVENTURES — mobile / touch controls
@@ -6,14 +6,6 @@ import { Input } from './actions.js';
    ============================================================ */
 
 const joystickSource = Symbol('joystick');
-const MENU_LABELS = {
-  title: 'Iniciar',
-  stageselect: 'Seleccionar',
-  briefing: 'Empezar ya',
-  paused: 'Reanudar',
-  continue: 'Continuar',
-  victory: 'Volver al título',
-};
 
 const TouchControls = {
   game: null,
@@ -100,7 +92,7 @@ const TouchControls = {
     if (!this.isTouch) return;
     const s = this.game.state;
     if (s !== this.menuState) {
-      const label = MENU_LABELS[s];
+      const label = START_SCREEN_LABELS.get(s);
       this.menuButton.hidden = !label;
       this.menuButton.dataset.screen = s;
       if (label) this.menuButton.textContent = label;
@@ -264,7 +256,7 @@ const TouchControls = {
     window.addEventListener('pointerdown', (e) => {
       if (!this.isTouch || this.game.viewBlocked) return;
       if (e.target?.closest?.('#touch-controls, #touchStart, #fullscreenBtn, #intro, #rotateHint')) return;
-      if (MENU_LABELS[this.game.state]) Input.tap('start');
+      if (START_SCREEN_LABELS.has(this.game.state)) Input.tap('start');
     }, { passive: true });
   },
 };

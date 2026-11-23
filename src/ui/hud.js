@@ -1,6 +1,7 @@
 import { drawPortrait, drawSprite } from '../media/sprite-renderer.js';
 import { FONT_MONO, drawShadow, roundRectPath, text } from '../engine/canvas.js';
 import { CFG, TAU, clamp, padScore } from '../engine/math.js';
+import { drawFerozCameo } from './feroz-cameo.js';
 import { stageClear } from './stage-clear.js';
 
 /* ============================================================
@@ -20,6 +21,12 @@ const UI = {
   black: '#0a0712',
   panel: '#160f26',
 };
+
+const BOSS_BAR = { x: 210, y: 72, width: 540, height: 52 };
+
+function hasBossBar(g) {
+  return g.boss?.active && g.boss.alive && !g.bossDefeated;
+}
 
 function drawHeart(ctx, x, y, s, color) {
   ctx.save();
@@ -178,7 +185,7 @@ const HUD = {
     }
 
     /* ---------------- boss bar ---------------- */
-    if (g.boss && g.boss.active && g.boss.alive && g.bossDefeated === false) {
+    if (hasBossBar(g)) {
       this.drawBossBar(ctx, g);
     }
 
@@ -292,19 +299,24 @@ const HUD = {
     }
   },
 
+  drawFerozCameo(ctx, g) {
+    const minimumTop = hasBossBar(g) ? BOSS_BAR.y + BOSS_BAR.height + 6 : 0;
+    drawFerozCameo(ctx, g.ferozCameoAge, g.reducedMotion, minimumTop);
+  },
+
   drawBossBar(ctx, g) {
     const b = g.boss;
-    const bx = 210, by = 72, bw = 540;
+    const { x: bx, y: by, width: bw, height: bh } = BOSS_BAR;
     ctx.save();
     // panel
     ctx.fillStyle = 'rgba(10, 5, 16, 0.92)';
-    roundRectPath(ctx, bx, by, bw, 52, 5);
+    roundRectPath(ctx, bx, by, bw, bh, 5);
     ctx.fill();
     ctx.strokeStyle = b.enraged ? UI.red : '#63243f';
     ctx.lineWidth = 2;
     ctx.stroke();
     ctx.fillStyle = b.enraged ? 'rgba(255,46,99,0.18)' : 'rgba(120, 40, 70, 0.14)';
-    roundRectPath(ctx, bx + 2, by + 2, bw - 4, 48, 4);
+    roundRectPath(ctx, bx + 2, by + 2, bw - 4, bh - 4, 4);
     ctx.fill();
 
     // label

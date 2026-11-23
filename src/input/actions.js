@@ -1,5 +1,14 @@
 const CHARGE_SECONDS = 0.65;
 
+const START_SCREEN_LABELS = new Map([
+  ['title', 'Iniciar'],
+  ['stageselect', 'Seleccionar'],
+  ['briefing', 'Empezar ya'],
+  ['paused', 'Reanudar'],
+  ['continue', 'Continuar'],
+  ['victory', 'Volver al título'],
+]);
+
 const ACTIONS = {
   left: ['ArrowLeft', 'KeyA'],
   right: ['ArrowRight', 'KeyD'],
@@ -145,4 +154,4 @@ function createInput() {
 
 const Input = createInput();
 
-export { Input, createInput };
+export { Input, START_SCREEN_LABELS, createInput };

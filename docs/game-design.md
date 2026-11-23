@@ -57,7 +57,7 @@ Consejos de combate:
 ## 🕹️ Contenido
 
 - **Intro del creador**: al cargar el juego se reproduce **`intro.mp4`** (logo de AMONGOLICUS PRODUCTIONS). Después hay **2 segundos de pantalla negra** y recién entonces aparece la pantalla de inicio. El título y el input quedan bloqueados hasta que termina el intro.
-- **Pantalla inicial**: se usa **`cover.jpg`** a pantalla completa, sin logos, HUD ni overlays extra encima de la imagen. Lo único que se dibuja sobre ella es el texto centrado **“Press START para iniciar”**.
+- **Pantalla inicial**: la portada **`cover.jpg`** muestra un aviso de inicio centrado. En móvil horizontal, el botón **Iniciar** aparece abajo en el centro y el de pantalla completa queda en la esquina inferior izquierda. Durante la partida, el botón de pantalla completa queda junto al de pausa.
 - **Guía DEMO de hasta 10 segundos**: al pulsar START y antes del primer nivel aparece una pantalla negra con todos los controles, el aviso de que es un **demo** y el objetivo principal: **Yomvi debe vencer a sus enemigos CLOAQUÍSTICOS** hasta llegar a Arthas. Al terminar, arranca el nivel y la música. También se puede saltar con Start o con un toque.
 - **3 zonas en un solo escenario con scroll y bloqueos de cámara**:
   1. **Pasillo central** — azulejos pastel, letreros de neón, palmeras, bancas y papeleras destructibles (sueltan pastelitos, tequeños y refrescos).

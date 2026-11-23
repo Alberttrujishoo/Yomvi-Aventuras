@@ -14,7 +14,7 @@ import { LEVELS } from '../levels/index.js';
 import { Assets } from '../media/assets.js';
 import { Sound } from '../media/audio.js';
 import { Art } from '../media/procedural-art.js';
-import { FEROZ_CAMEO_DURATION, drawFerozCameo } from '../ui/feroz-cameo.js';
+import { FEROZ_CAMEO_DURATION } from '../ui/feroz-cameo.js';
 import { HUD } from '../ui/hud.js';
 
 /* ============================================================
@@ -258,6 +258,7 @@ class Game {
         state: 'idle', stateT: 0, alive: true, hp: p.maxHp,
         invuln: 2, flash: 0, grabTarget: null, lives: Math.max(1, p.lives),
         specialEffect: null,
+        comboCount: 0, comboTimer: 0,
       });
       p.buffer.attack = 0;
       p.buffer.chargedAttack = false;
@@ -689,6 +690,11 @@ class Game {
     const { track, fallbackTrack } = this.level;
     const zone = this.stage.zoneAt(this.player.x);
     Sound.setTrack(Sound.hasExternal(track) ? track : fallbackTrack(zone), force);
+  }
+
+  showFerozCameo() {
+    this.ferozCameoAge = 0;
+    Sound.sfx('ferozCameo');
   }
 
   updateCombo(dt) {
@@ -1207,7 +1213,7 @@ class Game {
     if (this.state === 'paused') HUD.pause(ctx, this);
     this.drawCabinetOverlay(ctx);
     if (this.state === 'playing' && this.ferozCameoAge !== null) {
-      drawFerozCameo(ctx, this.ferozCameoAge, this.reducedMotion);
+      HUD.drawFerozCameo(ctx, this);
     }
   }
 

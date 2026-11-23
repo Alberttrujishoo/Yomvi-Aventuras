@@ -2,17 +2,29 @@ import { expect, test } from '@playwright/test';
 
 test.use({ viewport: { width: 844, height: 390 }, hasTouch: true });
 
-test('touch starts the game, keeps simultaneous actions and pauses on rotation', async ({ page, context, browserName }) => {
-  const failures = [];
-  page.on('pageerror', (error) => failures.push(error.message));
+async function openTitle(page) {
   await page.goto('/');
   await page.getByRole('button', { name: 'Omitir intro' }).tap();
   await expect.poll(() => page.evaluate(() => GAME.state)).toBe('title');
+}
+
+async function startFromTitle(page) {
   await page.getByRole('button', { name: 'Iniciar', exact: true }).tap();
   await expect.poll(() => page.evaluate(() => GAME.state)).toBe('briefing');
   await page.getByRole('button', { name: 'Empezar ya' }).tap();
-  await expect.poll(() => page.evaluate(() => [GAME.state, GAME.canvas.width, GAME.canvas.height]))
-    .toEqual(['playing', 720, 405]);
+  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('playing');
+}
+
+async function startMobileGame(page) {
+  await openTitle(page);
+  await startFromTitle(page);
+}
+
+test('touch starts the game, keeps simultaneous actions and pauses on rotation', async ({ page, context, browserName }) => {
+  const failures = [];
+  page.on('pageerror', (error) => failures.push(error.message));
+  await startMobileGame(page);
+  expect(await page.evaluate(() => [GAME.canvas.width, GAME.canvas.height])).toEqual([720, 405]);
 
   const below = await page.evaluate(() => {
     const b = document.querySelector('#joystick').getBoundingClientRect();
@@ -62,9 +74,7 @@ test('plays the intro if the host sends a complete MP4 for range requests', asyn
 });
 
 test('portrait freezes briefing and continue timers and blocks keyboard resume', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Omitir intro' }).tap();
-  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('title');
+  await openTitle(page);
   await page.touchscreen.tap(420, 190);
   await expect.poll(() => page.evaluate(() => GAME.state)).toBe('briefing');
 
@@ -119,11 +129,7 @@ test('the special renders two bottles and two compotes from the atlas and cleans
     };
   });
 
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Omitir intro' }).tap();
-  await page.getByRole('button', { name: 'Iniciar', exact: true }).tap();
-  await page.getByRole('button', { name: 'Empezar ya' }).tap();
-  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('playing');
+  await startMobileGame(page);
   await expect.poll(() => page.evaluate(async () => Boolean((await import('/src/media/assets.js')).Assets.specialEffect)))
     .toBe(true);
   const initialHp = await page.evaluate(() => GAME.player.hp);
@@ -157,13 +163,7 @@ test('the Feroz cameo slides in on the fifth combo hit without covering touch co
       return drawImage.call(this, source, ...args);
     };
   });
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Omitir intro' }).tap();
-  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('title');
-  await page.getByRole('button', { name: 'Iniciar', exact: true }).tap();
-  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('briefing');
-  await page.getByRole('button', { name: 'Empezar ya' }).tap();
-  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('playing');
+  await startMobileGame(page);
   await expect.poll(() => page.evaluate(async () => Boolean((await import('/src/media/assets.js')).Assets.ferozCameo)))
     .toBe(true);
 
@@ -207,14 +207,53 @@ test('the Feroz cameo slides in on the fifth combo hit without covering touch co
   expect(errors).toEqual([]);
 });
 
+test('combos restart between levels and Feroz leaves boss health visible', async ({ page }, testInfo) => {
+  await startMobileGame(page);
+  await expect.poll(() => page.evaluate(async () => Boolean((await import('/src/media/assets.js')).Assets.ferozCameo)))
+    .toBe(true);
+
+  const transition = await page.evaluate(() => {
+    for (let hit = 0; hit < 4; hit++) GAME.player.registerHit(0, false);
+    GAME.onBossDefeated();
+    for (let step = 0; step < 1010; step++) GAME.update(1 / 60);
+    GAME.player.registerHit(0, false);
+    return [GAME.stageId, GAME.comboCount, GAME.ferozCameoAge];
+  });
+  expect(transition).toEqual([2, 1, null]);
+
+  const bossFrame = await page.evaluate(() => {
+    const arena = GAME.locks.find(lock => lock.boss);
+    GAME.player.x = arena.triggerX;
+    GAME.camera.x = arena.camX;
+    GAME.activateLock(arena);
+    GAME.updateLocks(0);
+    GAME.boss.x = GAME.boss.introTarget;
+    GAME.boss.update(1 / 60);
+    GAME.bannerData = null;
+    GAME.shakeT = 0;
+
+    for (let hit = 0; hit < 3; hit++) GAME.player.registerHit(0, false);
+    GAME.render();
+    const readHealthEdge = () => GAME.ctx.getImageData(530, 75, 20, 15).data;
+    const before = readHealthEdge();
+    GAME.player.registerHit(0, false);
+    const triggeredAt = GAME.ferozCameoAge;
+    GAME.ferozCameoAge = 0.3;
+    GAME.render();
+    const after = readHealthEdge();
+    return {
+      bossActive: GAME.boss.active,
+      hits: GAME.comboCount,
+      triggeredAt,
+      healthUncovered: before.every((channel, index) => channel === after[index]),
+    };
+  });
+  expect(bossFrame).toEqual({ bossActive: true, hits: 5, triggeredAt: 0, healthUncovered: true });
+  await page.screenshot({ path: testInfo.outputPath('feroz-boss.png'), scale: 'css' });
+});
+
 test('rapid taps on arcade buttons are handled as control input without zoom', async ({ page }) => {
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Omitir intro' }).tap();
-  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('title');
-  await page.getByRole('button', { name: 'Iniciar', exact: true }).tap();
-  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('briefing');
-  await page.getByRole('button', { name: 'Empezar ya' }).tap();
-  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('playing');
+  await startMobileGame(page);
   await page.evaluate(() => {
     window.controlTaps = [];
     window.addEventListener('touchend', event => {
@@ -232,6 +271,7 @@ test('rapid taps on arcade buttons are handled as control input without zoom', a
 });
 
 test('fullscreen keeps touch controls usable and restores the game on exit', async ({ page, browserName }) => {
+  await page.setViewportSize({ width: 667, height: 375 });
   if (browserName === 'webkit') {
     await page.addInitScript(() => {
       // Playwright runs desktop WebKit. Model iPhone Safari's unavailable API.
@@ -239,9 +279,7 @@ test('fullscreen keeps touch controls usable and restores the game on exit', asy
     });
   }
 
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Omitir intro' }).tap();
-  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('title');
+  await openTitle(page);
   const fullscreen = page.getByRole('button', {
     name: browserName === 'webkit' ? 'Ampliar juego' : 'Pantalla completa',
   });
@@ -253,8 +291,12 @@ test('fullscreen keeps touch controls usable and restores the game on exit', asy
   expect((await canvas.boundingBox()).width).toBeGreaterThan(initial.width);
   expect(await page.evaluate(() => GAME.state)).toBe('title');
 
-  await page.getByRole('button', { name: 'Iniciar', exact: true }).tap();
+  const startBox = await page.getByRole('button', { name: 'Iniciar', exact: true }).boundingBox();
+  const fullscreenBox = await fullscreen.boundingBox();
+  expect(fullscreenBox.x + fullscreenBox.width).toBeLessThan(startBox.x);
+  await page.touchscreen.tap(startBox.x + startBox.width - 8, startBox.y + startBox.height - 8);
   await expect.poll(() => page.evaluate(() => GAME.state)).toBe('briefing');
+  await expect(fullscreen).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Empezar ya' }).tap();
   await expect.poll(() => page.evaluate(() => GAME.state)).toBe('playing');
   await page.getByRole('button', { name: 'Giro especial' }).tap();

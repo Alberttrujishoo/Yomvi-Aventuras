@@ -1,9 +1,10 @@
+import { START_SCREEN_LABELS } from './actions.js';
+
 const DIRECTIONS = [
   ['left', 14, 0, -1], ['right', 15, 0, 1],
   ['up', 12, 1, -1], ['down', 13, 1, 1],
 ];
 
-const MENU_STATES = new Set(['title', 'briefing', 'stageselect', 'paused', 'continue', 'victory']);
 const STANDARD_BUTTONS = [0, 1, 2, 8, 9];
 const GENERIC_BUTTONS = [0, 1, 2, 3, 8, 9];
 
@@ -72,7 +73,7 @@ function createGamepadInput(input, read = readBrowserGamepads) {
           if (hit(1)) input.tap('special');
         } else if (state === 'intro') {
           if (menu || hit(0)) input.tap('skipIntro');
-        } else if (MENU_STATES.has(state)) {
+        } else if (START_SCREEN_LABELS.has(state)) {
           if (menu || hit(0)) input.tap('start');
           if (state === 'stageselect' && (hit(1) || hit(8))) input.tap('pause');
         }

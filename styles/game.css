@@ -91,6 +91,10 @@ body {
   border-color: #ffe66d;
 }
 
+body.touch.landscape:not(.in-game) #fullscreenBtn {
+  left: calc(14px + env(safe-area-inset-left));
+}
+
 body.touch.portrait #fullscreenBtn {
   display: none;
 }

@@ -3,8 +3,16 @@ import { Assets } from '../media/assets.js';
 
 // Texture regions in special-effect.webp. Keeping the image in one atlas lets
 // the game render both depths of the slash and all four props from one decode.
-const BACK_ARC = [0, 0, 384, 61];
-const FRONT_ARC = [0, 61, 384, 67];
+const BACK_ARC = {
+  region: [0, 0, 384, 61], duration: 0.41, width: 110, expansion: 152,
+  aspect: 0.23, lift: 85, tilt: -0.14, spriteAnchor: -0.5,
+  stroke: '#ffa34d', lineWidth: 3, startAngle: Math.PI, endAngle: TAU,
+};
+const FRONT_ARC = {
+  region: [0, 61, 384, 67], duration: 0.47, width: 165, expansion: 145,
+  aspect: 0.31, lift: 49, tilt: 0.09, spriteAnchor: 0,
+  stroke: '#ffe69a', lineWidth: 5, startAngle: 0, endAngle: Math.PI,
+};
 const BOTTLE = [0, 132, 32, 81];
 const COMPOTE = [40, 132, 60, 66];
 
@@ -55,39 +63,37 @@ class SpecialEffect {
       ctx.stroke();
       ctx.restore();
     }
-    this.drawArcs(ctx, x, false);
+    this.drawArcs(ctx, x, BACK_ARC);
   }
 
   drawFront(ctx, camX) {
     const x = this.x - camX;
-    this.drawArcs(ctx, x, true);
+    this.drawArcs(ctx, x, FRONT_ARC);
     if (!this.reducedMotion) this.drawSparks(ctx, x);
     this.drawProps(ctx, x);
   }
 
-  drawArcs(ctx, x, front) {
+  drawArcs(ctx, x, arc) {
     const texture = Assets.specialEffect;
-    const region = front ? FRONT_ARC : BACK_ARC;
-    const span = front ? 0.47 : 0.41;
     const reduced = this.reducedMotion;
 
     for (const delay of reduced ? [0] : [0.018, 0.19]) {
-      const progress = (this.time - delay) / (reduced ? this.duration : span);
+      const progress = (this.time - delay) / (reduced ? this.duration : arc.duration);
       if (progress < 0 || progress >= 1) continue;
       const grow = reduced ? 0.62 : 1 - (1 - progress) ** 3;
-      const width = (front ? 165 : 110) + grow * (front ? 145 : 152);
-      const height = width * (front ? 0.31 : 0.23);
+      const width = arc.width + grow * arc.expansion;
+      const height = width * arc.aspect;
       ctx.save();
-      ctx.translate(x, this.y - (front ? 49 : 85) + 19 * grow);
-      if (!reduced) ctx.rotate((front ? 0.09 : -0.14) * (1 - progress));
+      ctx.translate(x, this.y - arc.lift + 19 * grow);
+      if (!reduced) ctx.rotate(arc.tilt * (1 - progress));
       ctx.globalAlpha *= (reduced ? 0.8 : Math.min(1, progress * 12 + 0.32)) * (1 - progress) ** 1.3;
       if (texture) {
-        ctx.drawImage(texture, ...region, -width / 2, front ? 0 : -height / 2, width, height / 2);
+        ctx.drawImage(texture, ...arc.region, -width / 2, height * arc.spriteAnchor, width, height / 2);
       } else {
-        ctx.strokeStyle = front ? '#ffe69a' : '#ffa34d';
-        ctx.lineWidth = front ? 5 : 3;
+        ctx.strokeStyle = arc.stroke;
+        ctx.lineWidth = arc.lineWidth;
         ctx.beginPath();
-        ctx.ellipse(0, 0, width / 2, height / 2, 0, front ? 0 : Math.PI, front ? Math.PI : TAU);
+        ctx.ellipse(0, 0, width / 2, height / 2, 0, arc.startAngle, arc.endAngle);
         ctx.stroke();
       }
       ctx.restore();
