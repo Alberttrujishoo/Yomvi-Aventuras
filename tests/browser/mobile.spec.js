@@ -313,7 +313,7 @@ test('Arthas rejecting an attack leaves the Toasty cameo waiting for the fifth e
   expect(result.sixth).toEqual({ hp: 384, combo: 6, cameo: 0.2 });
 });
 
-test('the death portrait and caption appear before respawn or continue', async ({ page }, testInfo) => {
+test('the death portrait holds for three seconds before fading, across respawn and continue', async ({ page }, testInfo) => {
   await startMobileGame(page);
   await expect.poll(() => page.evaluate(async () => Boolean((await import('/src/media/assets.js')).Assets.deathCameo)))
     .toBe(true);
@@ -327,7 +327,10 @@ test('the death portrait and caption appear before respawn or continue', async (
     const drawImage = ctx.drawImage.bind(ctx);
     const fillText = ctx.fillText.bind(ctx);
     ctx.drawImage = (source, ...args) => {
-      if (source instanceof HTMLImageElement && source.src.endsWith('/death-cameo.webp')) window.deathPortraits++;
+      if (source instanceof HTMLImageElement && source.src.endsWith('/death-cameo.webp')) {
+        window.deathPortraits++;
+        window.deathOpacity = ctx.globalAlpha;
+      }
       drawImage(source, ...args);
     };
     ctx.fillText = (label, ...args) => {
@@ -360,6 +363,11 @@ test('the death portrait and caption appear before respawn or continue', async (
   await expect.poll(() => page.evaluate(() => [GAME.state, GAME.player.alive, GAME.player.lives]))
     .toEqual(['playing', true, 2]);
   expect(await page.evaluate(() => GAME.toastyCameoAge)).toBe(null);
+  expect(await page.evaluate(() => {
+    const count = window.deathPortraits;
+    GAME.render();
+    return [window.deathPortraits > count, window.deathOpacity];
+  })).toEqual([true, 1]);
 
   await page.evaluate(() => {
     window.deathPortraits = 0;
@@ -369,11 +377,23 @@ test('the death portrait and caption appear before respawn or continue', async (
   });
   await page.waitForFunction(() => !GAME.player.alive && window.deathPortraits > 0);
   await expect.poll(() => page.evaluate(() => GAME.state)).toBe('continue');
-  expect(await page.evaluate(() => {
-    const count = window.deathPortraits;
-    GAME.render();
-    return window.deathPortraits === count;
-  })).toBe(true);
+  const frames = await page.evaluate(() => {
+    const opacity = () => {
+      window.deathOpacity = null;
+      GAME.render();
+      return window.deathOpacity;
+    };
+    const onContinue = opacity();
+    GAME.update(3.17 - GAME.deathCameoAge);
+    const afterThreeSeconds = opacity();
+    GAME.update(0.1);
+    const duringFade = opacity();
+    GAME.update(0.2);
+    return { onContinue, afterThreeSeconds, duringFade, afterFade: opacity(), state: GAME.state };
+  });
+  expect(frames).toMatchObject({ onContinue: 1, afterThreeSeconds: 1, afterFade: null, state: 'continue' });
+  expect(frames.duringFade).toBeGreaterThan(0);
+  expect(frames.duringFade).toBeLessThan(1);
 });
 
 test('rapid taps on arcade buttons are handled as control input without zoom', async ({ page }) => {

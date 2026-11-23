@@ -1,7 +1,7 @@
 import { drawPortrait, drawSprite } from '../media/sprite-renderer.js';
 import { FONT_MONO, drawShadow, roundRectPath, text } from '../engine/canvas.js';
 import { CFG, TAU, clamp, padScore } from '../engine/math.js';
-import { CAMEO_DURATION, drawCameo } from './cameo.js';
+import { drawCameo } from './cameo.js';
 import { stageClear } from './stage-clear.js';
 
 /* ============================================================
@@ -301,11 +301,11 @@ const HUD = {
   },
 
   drawCameo(ctx, g) {
-    const isDead = !g.player.alive;
-    const age = isDead ? g.player.deadT : g.toastyCameoAge;
-    if (age === null || age >= CAMEO_DURATION) return;
-    const minimumTop = hasBossBar(g) ? BOSS_BAR.y + BOSS_BAR.height + 6 : 0;
-    drawCameo(ctx, isDead ? 'death' : 'toasty', age, g.reducedMotion, minimumTop);
+    const showDeath = g.deathCameoAge !== null;
+    const age = showDeath ? g.deathCameoAge : g.toastyCameoAge;
+    if (age === null) return;
+    const minimumTop = g.state === 'continue' ? 130 : hasBossBar(g) ? BOSS_BAR.y + BOSS_BAR.height + 6 : 0;
+    drawCameo(ctx, showDeath ? 'death' : 'toasty', age, g.reducedMotion, minimumTop);
   },
 
   drawBossBar(ctx, g) {

@@ -14,7 +14,7 @@ import { LEVELS } from '../levels/index.js';
 import { Assets } from '../media/assets.js';
 import { Sound } from '../media/audio.js';
 import { Art } from '../media/procedural-art.js';
-import { CAMEO_DURATION } from '../ui/cameo.js';
+import { DEATH_CAMEO_DURATION, TOASTY_CAMEO_DURATION } from '../ui/cameo.js';
 import { HUD } from '../ui/hud.js';
 
 /* ============================================================
@@ -213,6 +213,7 @@ class Game {
     this.comboTimer = 0;
     this.comboFlash = 0;
     this.toastyCameoAge = null;
+    this.deathCameoAge = null;
     this.damageFlash = 0;
     this.grabPrompt = false;
     this.hitstopT = 0;
@@ -379,6 +380,7 @@ class Game {
   onPlayerDeath() {
     this.clearPlayerCharge();
     this.toastyCameoAge = null;
+    this.deathCameoAge = 0;
     this.damageFlash = 0.5;
     this.shake(10, 0.4);
   }
@@ -434,6 +436,10 @@ class Game {
   /* ---------------- input-sensitive update ---------------- */
   update(dt) {
     Sound.update();
+    if (this.deathCameoAge !== null && (this.state === 'playing' || this.state === 'continue')) {
+      this.deathCameoAge += dt;
+      if (this.deathCameoAge >= DEATH_CAMEO_DURATION) this.deathCameoAge = null;
+    }
 
     // Creator intro: keep the title and all gameplay input on hold.
     if (this.state === 'intro') {
@@ -623,7 +629,7 @@ class Game {
     this.comboFlash = Math.max(0, this.comboFlash - dt);
     if (this.toastyCameoAge !== null) {
       this.toastyCameoAge += dt;
-      if (this.toastyCameoAge >= CAMEO_DURATION) this.toastyCameoAge = null;
+      if (this.toastyCameoAge >= TOASTY_CAMEO_DURATION) this.toastyCameoAge = null;
     }
     this.flashScreen = Math.max(0, this.flashScreen - dt * 1.9);
     if (this.levelMsg) {
@@ -694,7 +700,7 @@ class Game {
   }
 
   showToastyCameo() {
-    if (!this.player?.alive) return;
+    if (!this.player?.alive || this.deathCameoAge !== null) return;
     this.toastyCameoAge = 0;
     Sound.sfx('toastyCameo');
   }
@@ -1201,6 +1207,7 @@ class Game {
     if (this.state === 'continue') {
       HUD.continueScreen(ctx, this);
       this.drawCabinetOverlay(ctx);
+      HUD.drawCameo(ctx, this);
       return;
     }
 

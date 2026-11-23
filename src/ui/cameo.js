@@ -2,18 +2,20 @@ import { CFG } from '../engine/math.js';
 import { Assets } from '../media/assets.js';
 
 const ENTER_DURATION = 0.18;
-const EXIT_START = 0.94;
 const EXIT_DURATION = 0.23;
-const CAMEO_DURATION = EXIT_START + EXIT_DURATION;
+const TOASTY_EXIT_START = 0.94;
+const DEATH_EXIT_START = ENTER_DURATION + 3;
+const TOASTY_CAMEO_DURATION = TOASTY_EXIT_START + EXIT_DURATION;
+const DEATH_CAMEO_DURATION = DEATH_EXIT_START + EXIT_DURATION;
 const CAMEOS = {
-  toasty: { portraitKey: 'toastyCameo', lines: ['TOASTY!'], textSize: 34, border: '#ffb64d', ink: '#ffe790' },
-  death: { portraitKey: 'deathCameo', lines: ['YO CREO QUE', 'SE MURIO!'], textSize: 23, border: '#71caff', ink: '#e1f6ff' },
+  toasty: { portraitKey: 'toastyCameo', lines: ['TOASTY!'], textSize: 34, border: '#ffb64d', ink: '#ffe790', exitStart: TOASTY_EXIT_START },
+  death: { portraitKey: 'deathCameo', lines: ['YO CREO QUE', 'SE MURIO!'], textSize: 23, border: '#71caff', ink: '#e1f6ff', exitStart: DEATH_EXIT_START },
 };
 
 function drawCameo(ctx, kind, age, reducedMotion, minimumTop) {
-  const { portraitKey, lines, textSize, border, ink } = CAMEOS[kind];
+  const { portraitKey, lines, textSize, border, ink, exitStart } = CAMEOS[kind];
   const entrance = Math.min(age / ENTER_DURATION, 1);
-  const leaving = Math.max(0, (age - EXIT_START) / EXIT_DURATION);
+  const leaving = Math.max(0, (age - exitStart) / EXIT_DURATION);
   const top = Math.max(85, minimumTop);
 
   ctx.save();
@@ -74,4 +76,4 @@ function drawCameo(ctx, kind, age, reducedMotion, minimumTop) {
   ctx.restore();
 }
 
-export { CAMEO_DURATION, drawCameo };
+export { DEATH_CAMEO_DURATION, TOASTY_CAMEO_DURATION, drawCameo };
