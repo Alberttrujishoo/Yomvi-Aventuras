@@ -263,6 +263,11 @@ class AudioEngine {
     this.externalVolume = 0.42;
     this.wantsLevel = false;     // an external MP3 should be playing
     this.desiredTrack = null;
+
+    // Hidden-code confirmation sound (Common coin.ogg).
+    this.coinSfx = null;
+    this.coinSfxVolume = 0.6;
+    this.coinSfxPath = 'assets/audio/Common coin.ogg';
   }
 
   init() {
@@ -335,6 +340,10 @@ class AudioEngine {
       slot.el.muted = this.muted;
       slot.el.volume = this.muted ? 0 : slot.volume;
     }
+    if (this.coinSfx) {
+      this.coinSfx.muted = this.muted;
+      this.coinSfx.volume = this.muted ? 0 : this.coinSfxVolume;
+    }
     return this.muted;
   }
 
@@ -342,6 +351,40 @@ class AudioEngine {
   hasExternal(name) {
     const slot = this.externalTracks[name];
     return !!(slot && slot.ready && slot.el);
+  }
+
+  /* ---------- hidden-code coin sound ---------- */
+  loadCoinSfx() {
+    if (this.coinSfx) return this.coinSfx;
+    try {
+      const el = new Audio(this.coinSfxPath);
+      el.preload = 'auto';
+      el.volume = this.muted ? 0 : this.coinSfxVolume;
+      el.muted = this.muted;
+      this.coinSfx = el;
+    } catch (e) {
+      this.coinSfx = null;
+    }
+    return this.coinSfx;
+  }
+
+  playCoinSfx() {
+    const el = this.loadCoinSfx();
+    if (!el) {
+      this.sfx('coin');
+      return;
+    }
+    el.muted = this.muted;
+    el.volume = this.muted ? 0 : this.coinSfxVolume;
+    try { el.currentTime = 0; } catch (e) { /* noop */ }
+    let p = null;
+    try { p = el.play(); } catch (e) { p = null; }
+    if (p && p.catch) {
+      p.catch(() => {
+        // If the browser blocks the audio element, use the procedural coin.
+        this.sfx('coin');
+      });
+    }
   }
 
   loadLevelMusic(paths, name = 'level') {
@@ -650,6 +693,15 @@ class AudioEngine {
       case 'throw':
         this.noise(0.24, 0.16, 'bandpass', 500, 2600);
         this.tone(180, 0.2, 'triangle', 0.08, 480);
+        break;
+      case 'shotgun':
+        this.noise(0.16, 0.22, 'lowpass', 1800, 300);
+        this.tone(95, 0.18, 'sawtooth', 0.24, 40);
+        this.tone(260, 0.05, 'square', 0.10, 90);
+        break;
+      case 'splat':
+        this.noise(0.12, 0.12, 'bandpass', 400, 1200);
+        this.tone(120, 0.10, 'triangle', 0.12, 50);
         break;
       case 'special':
         this.tone(180, 0.42, 'sawtooth', 0.12, 1050);

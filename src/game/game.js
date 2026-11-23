@@ -46,6 +46,7 @@ class Game {
     this.muted = false;
     this.ready = false;
     this.stageSelectIndex = 0;
+    this.roxyMode = false;
     this.camera = { x: 0 };
     this.stageId = 1;
     this.stage = null;
@@ -410,11 +411,18 @@ class Game {
     if (this.state === 'intro') return;
 
     if (this.state === 'title') {
+      // Hidden ROXYFOXY mode: burger shotgun + burger rain.
+      if (Input.secret('ROXYFOXY')) {
+        Input.flush();
+        this.roxyMode = !this.roxyMode;
+        Sound.playCoinSfx();
+        return;
+      }
       if (Input.secret('AHPUCCA')) {
         Input.flush();
         this.stageSelectIndex = 0;
         this.state = 'stageselect';
-        Sound.sfx('select');
+        Sound.playCoinSfx();
         return;
       }
       if (Input.hit('stage1')) {

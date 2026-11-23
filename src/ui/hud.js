@@ -658,7 +658,7 @@ const HUD = {
       shadow: '#b3123f', shadowX: 5, shadowY: 6,
       glow: 'rgba(255, 95, 174, 0.6)', glowSize: 22,
     });
-    text(ctx, 'MENÚ OCULTO · ACCESO CONCEDIDO', CFG.W / 2, 104, 10, UI.cyan, {
+    text(ctx, 'SELECCIONA UN STAGE', CFG.W / 2, 104, 10, UI.cyan, {
       align: 'center', outlineW: 3, spacing: 3.5, font: FONT_MONO,
     });
 

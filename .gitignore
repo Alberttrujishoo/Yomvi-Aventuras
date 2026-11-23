@@ -4,3 +4,5 @@ playwright-report/
 test-results/
 .wrangler/
 .DS_Store
+_legacy_2026-11-23/
+.github_token
