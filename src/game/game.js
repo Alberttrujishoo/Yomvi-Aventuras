@@ -14,7 +14,7 @@ import { LEVELS } from '../levels/index.js';
 import { Assets } from '../media/assets.js';
 import { Sound } from '../media/audio.js';
 import { Art } from '../media/procedural-art.js';
-import { FEROZ_CAMEO_DURATION } from '../ui/feroz-cameo.js';
+import { CAMEO_DURATION } from '../ui/cameo.js';
 import { HUD } from '../ui/hud.js';
 
 /* ============================================================
@@ -212,7 +212,7 @@ class Game {
     this.comboCount = 0;
     this.comboTimer = 0;
     this.comboFlash = 0;
-    this.ferozCameoAge = null;
+    this.toastyCameoAge = null;
     this.damageFlash = 0;
     this.grabPrompt = false;
     this.hitstopT = 0;
@@ -329,7 +329,7 @@ class Game {
   startContinue() {
     this.state = 'continue';
     this.continueTime = 10;
-    this.ferozCameoAge = null;
+    this.toastyCameoAge = null;
     this.hitstopT = 0;
     this.shakeT = 0;
     this.bannerData = null;
@@ -378,6 +378,7 @@ class Game {
 
   onPlayerDeath() {
     this.clearPlayerCharge();
+    this.toastyCameoAge = null;
     this.damageFlash = 0.5;
     this.shake(10, 0.4);
   }
@@ -620,9 +621,9 @@ class Game {
   updateFlashTimers(dt) {
     this.damageFlash = Math.max(0, this.damageFlash - dt);
     this.comboFlash = Math.max(0, this.comboFlash - dt);
-    if (this.ferozCameoAge !== null) {
-      this.ferozCameoAge += dt;
-      if (this.ferozCameoAge >= FEROZ_CAMEO_DURATION) this.ferozCameoAge = null;
+    if (this.toastyCameoAge !== null) {
+      this.toastyCameoAge += dt;
+      if (this.toastyCameoAge >= CAMEO_DURATION) this.toastyCameoAge = null;
     }
     this.flashScreen = Math.max(0, this.flashScreen - dt * 1.9);
     if (this.levelMsg) {
@@ -692,9 +693,10 @@ class Game {
     Sound.setTrack(Sound.hasExternal(track) ? track : fallbackTrack(zone), force);
   }
 
-  showFerozCameo() {
-    this.ferozCameoAge = 0;
-    Sound.sfx('ferozCameo');
+  showToastyCameo() {
+    if (!this.player?.alive) return;
+    this.toastyCameoAge = 0;
+    Sound.sfx('toastyCameo');
   }
 
   updateCombo(dt) {
@@ -1212,9 +1214,7 @@ class Game {
     drawNpcBubble(this, ctx);
     if (this.state === 'paused') HUD.pause(ctx, this);
     this.drawCabinetOverlay(ctx);
-    if (this.state === 'playing' && this.ferozCameoAge !== null) {
-      HUD.drawFerozCameo(ctx, this);
-    }
+    if (this.state === 'playing') HUD.drawCameo(ctx, this);
   }
 
   drawTitleScreen(ctx) {

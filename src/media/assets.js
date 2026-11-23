@@ -372,7 +372,8 @@ const Assets = {
   hero: null,
   mainScreen: null,
   specialEffect: null,
-  ferozCameo: null,
+  toastyCameo: null,
+  deathCameo: null,
   bosses: new Map(),
 
   async loadTitle(onStatus) {
@@ -388,8 +389,13 @@ const Assets = {
     this.specialEffect = await loadImage('special-effect.webp');
   },
 
-  async loadFerozCameo() {
-    this.ferozCameo = await loadImage('feroz-cameo.webp');
+  async loadCameos() {
+    await Promise.all([
+      ['toastyCameo', 'toasty-cameo.webp'],
+      ['deathCameo', 'death-cameo.webp'],
+    ].map(async ([key, filename]) => {
+      this[key] = await loadImage(filename);
+    }));
   },
 
   loadBoss(stageId, filename) {
