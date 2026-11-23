@@ -167,6 +167,18 @@ test('the Feroz cameo slides in on the fifth combo hit without covering touch co
   await expect.poll(() => page.evaluate(async () => Boolean((await import('/src/media/assets.js')).Assets.ferozCameo)))
     .toBe(true);
 
+  await page.evaluate(async () => {
+    const { Sound } = await import('/src/media/audio.js');
+    const playSound = Sound.sfx.bind(Sound);
+    window.ferozSounds = [];
+    Sound.sfx = (name) => {
+      if (name === 'ferozCameo') {
+        window.ferozSounds.push([GAME.comboCount, GAME.ferozCameoAge, Sound.ready]);
+      }
+      playSound(name);
+    };
+  });
+
   const attack = page.getByRole('button', { name: 'Golpear' });
   expect(await page.evaluate(() => {
     const { player, enemies } = GAME;
@@ -175,15 +187,15 @@ test('the Feroz cameo slides in on the fifth combo hit without covering touch co
     player.registerHit(0, false);
     enemies[0].x = player.x + 50;
     enemies[0].y = player.y;
-    return [player.comboCount, GAME.ferozCameoAge];
-  })).toEqual([4, null]);
+    return [player.comboCount, GAME.ferozCameoAge, window.ferozSounds.length];
+  })).toEqual([4, null, 0]);
   await attack.tap();
   await page.waitForFunction(() => GAME.comboCount === 5 && GAME.ferozCameoAge >= 0.2 && window.ferozFrame);
   expect(await page.evaluate(() => {
     const age = GAME.ferozCameoAge;
     GAME.player.registerHit(0, false);
-    return [GAME.comboCount, GAME.ferozCameoAge === age];
-  })).toEqual([6, true]);
+    return [GAME.comboCount, GAME.ferozCameoAge === age, window.ferozSounds];
+  })).toEqual([6, true, [[5, 0, true]]]);
 
   const frame = await page.evaluate(() => window.ferozFrame);
   const canvas = await page.locator('#game').boundingBox();
