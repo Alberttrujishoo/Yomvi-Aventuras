@@ -4,9 +4,14 @@ import { Assets } from '../media/assets.js';
 const ENTER_DURATION = 0.18;
 const EXIT_START = 0.94;
 const EXIT_DURATION = 0.23;
-const FEROZ_CAMEO_DURATION = EXIT_START + EXIT_DURATION;
+const CAMEO_DURATION = EXIT_START + EXIT_DURATION;
+const CAMEOS = {
+  toasty: { image: 'toastyCameo', lines: ['TOASTY!'], textSize: 34, border: '#ffb64d', ink: '#ffe790' },
+  death: { image: 'deathCameo', lines: ['YO CREO QUE', 'SE MURIO!'], textSize: 23, border: '#71caff', ink: '#e1f6ff' },
+};
 
-function drawFerozCameo(ctx, age, reducedMotion, minimumTop = 0) {
+function drawCameo(ctx, kind, age, reducedMotion, minimumTop) {
+  const { image, lines, textSize, border, ink } = CAMEOS[kind];
   const entrance = Math.min(age / ENTER_DURATION, 1);
   const leaving = Math.max(0, (age - EXIT_START) / EXIT_DURATION);
   const top = Math.max(85, minimumTop);
@@ -22,8 +27,8 @@ function drawFerozCameo(ctx, age, reducedMotion, minimumTop = 0) {
   }
   ctx.globalAlpha *= Math.min(entrance * 4, 1) * (1 - leaving);
 
-  ctx.fillStyle = '#111a18';
-  ctx.strokeStyle = '#b4e849';
+  ctx.fillStyle = '#1c0c1c';
+  ctx.strokeStyle = border;
   ctx.lineWidth = 3;
   ctx.beginPath();
   ctx.moveTo(-272, -67);
@@ -37,7 +42,7 @@ function drawFerozCameo(ctx, age, reducedMotion, minimumTop = 0) {
 
   ctx.save();
   ctx.globalAlpha *= 0.42;
-  ctx.strokeStyle = '#eea648';
+  ctx.strokeStyle = border;
   ctx.lineWidth = 2;
   ctx.beginPath();
   for (let i = 0; i < 4; i++) {
@@ -47,18 +52,26 @@ function drawFerozCameo(ctx, age, reducedMotion, minimumTop = 0) {
   ctx.stroke();
   ctx.restore();
 
-  if (Assets.ferozCameo) {
-    ctx.drawImage(Assets.ferozCameo, -263, -94, 260, 105);
+  const portrait = Assets[image];
+  if (portrait) {
+    const scale = 134 / Math.max(portrait.naturalWidth, portrait.naturalHeight);
+    const width = portrait.naturalWidth * scale;
+    const height = portrait.naturalHeight * scale;
+    ctx.drawImage(portrait, 18 - width, 7 - height, width, height);
   }
-  ctx.font = '900 34px "Arial Black", Impact, sans-serif';
-  ctx.textAlign = 'center';
+  ctx.font = `900 ${textSize}px "Arial Black", Impact, sans-serif`;
+  ctx.textAlign = 'left';
   ctx.lineJoin = 'round';
   ctx.lineWidth = 7;
-  ctx.strokeStyle = '#07170b';
-  ctx.fillStyle = '#efff9a';
-  ctx.strokeText('¡FEROZ!', -110, -96);
-  ctx.fillText('¡FEROZ!', -110, -96);
+  ctx.strokeStyle = '#260b16';
+  ctx.fillStyle = ink;
+  const firstLineY = lines.length === 1 ? -42 : -58;
+  for (const [index, line] of lines.entries()) {
+    const y = firstLineY + index * 29;
+    ctx.strokeText(line, -248, y, 122);
+    ctx.fillText(line, -248, y, 122);
+  }
   ctx.restore();
 }
 
-export { FEROZ_CAMEO_DURATION, drawFerozCameo };
+export { CAMEO_DURATION, drawCameo };

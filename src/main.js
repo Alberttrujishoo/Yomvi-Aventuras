@@ -57,7 +57,8 @@ import { playCreatorIntro } from './ui/intro.js';
   syncVisibility();
 
   void Assets.loadSpecialEffect();
-  void Assets.loadFerozCameo();
+  void Assets.loadToastyCameo();
+  void Assets.loadDeathCameo();
   Assets.loadTitle(setStatus).then(() => {
     game.applyAssets();
     game.muted = Sound.muted;

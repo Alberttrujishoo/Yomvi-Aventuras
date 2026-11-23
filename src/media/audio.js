@@ -708,7 +708,7 @@ class AudioEngine {
         this.noise(0.38, 0.12, 'highpass', 900, 4200);
         this.chord([60, 64, 67, 72], 0.4, 'square', 0.03, 0.05);
         break;
-      case 'ferozCameo': {
+      case 'toastyCameo': {
         if (this.muted) break;
         // Heavenis57drum.mid, 30.95–31.58 s: six tom hits in triplets into a kick and crash.
         const triplet = 60 / 190 / 3;

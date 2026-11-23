@@ -150,30 +150,35 @@ test('the special renders two bottles and two compotes from the atlas and cleans
   expect(errors).toEqual([]);
 });
 
-test('the Feroz cameo slides in on the fifth combo hit without covering touch controls', async ({ page }, testInfo) => {
+test('the Toasty cameo slides in on the fifth combo hit without covering touch controls', async ({ page }, testInfo) => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.addInitScript(() => {
     const drawImage = CanvasRenderingContext2D.prototype.drawImage;
     CanvasRenderingContext2D.prototype.drawImage = function (source, ...args) {
-      if (source instanceof HTMLImageElement && source.src.endsWith('/feroz-cameo.webp')) {
+      if (source instanceof HTMLImageElement && source.src.endsWith('/toasty-cameo.webp')) {
         const { a, e, f } = this.getTransform();
-        window.ferozFrame = { left: e + args[0] * a, bottom: f + (args[1] + args[3]) * a };
+        window.toastyFrame = { left: e + args[0] * a, right: e + (args[0] + args[2]) * a, bottom: f + (args[1] + args[3]) * a };
       }
       return drawImage.call(this, source, ...args);
     };
+    const fillText = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function (label, ...args) {
+      if (label === 'TOASTY!') window.toastyCaptionDrawn = true;
+      return fillText.call(this, label, ...args);
+    };
   });
   await startMobileGame(page);
-  await expect.poll(() => page.evaluate(async () => Boolean((await import('/src/media/assets.js')).Assets.ferozCameo)))
+  await expect.poll(() => page.evaluate(async () => Boolean((await import('/src/media/assets.js')).Assets.toastyCameo)))
     .toBe(true);
 
   await page.evaluate(async () => {
     const { Sound } = await import('/src/media/audio.js');
     const playSound = Sound.sfx.bind(Sound);
-    window.ferozSounds = [];
+    window.toastySounds = [];
     Sound.sfx = (name) => {
-      if (name === 'ferozCameo') {
-        window.ferozSounds.push([GAME.comboCount, GAME.ferozCameoAge, Sound.ready]);
+      if (name === 'toastyCameo') {
+        window.toastySounds.push([GAME.comboCount, GAME.toastyCameoAge, Sound.ready]);
       }
       playSound(name);
     };
@@ -187,29 +192,30 @@ test('the Feroz cameo slides in on the fifth combo hit without covering touch co
     player.registerHit(0, false);
     enemies[0].x = player.x + 50;
     enemies[0].y = player.y;
-    return [player.comboCount, GAME.ferozCameoAge, window.ferozSounds.length];
+    return [player.comboCount, GAME.toastyCameoAge, window.toastySounds.length];
   })).toEqual([4, null, 0]);
   await attack.tap();
-  await page.waitForFunction(() => GAME.comboCount === 5 && GAME.ferozCameoAge >= 0.2 && window.ferozFrame);
-  expect(await page.evaluate(() => {
-    const age = GAME.ferozCameoAge;
-    GAME.player.registerHit(0, false);
-    return [GAME.comboCount, GAME.ferozCameoAge === age, window.ferozSounds];
-  })).toEqual([6, true, [[5, 0, true]]]);
-
-  const frame = await page.evaluate(() => window.ferozFrame);
+  await page.waitForFunction(() => GAME.comboCount === 5 && GAME.toastyCameoAge >= 0.2 && window.toastyFrame);
+  const frame = await page.evaluate(() => window.toastyFrame);
   const canvas = await page.locator('#game').boundingBox();
   const special = await page.getByRole('button', { name: 'Giro especial' }).boundingBox();
-  expect(frame.left).toBeCloseTo(504, 0);
+  expect(frame.left).toBeGreaterThan(590);
+  expect(frame.right).toBeLessThan(720);
+  expect(await page.evaluate(() => window.toastyCaptionDrawn)).toBe(true);
   expect(canvas.y + (frame.bottom / 405) * canvas.height).toBeLessThan(special.y);
-  await page.screenshot({ path: testInfo.outputPath('feroz-landscape.png'), scale: 'css' });
-  await expect.poll(() => page.evaluate(() => GAME.ferozCameoAge)).toBe(null);
+  await page.screenshot({ path: testInfo.outputPath('toasty-landscape.png'), scale: 'css' });
+  expect(await page.evaluate(() => {
+    const age = GAME.toastyCameoAge;
+    GAME.player.registerHit(0, false);
+    return [GAME.comboCount, GAME.toastyCameoAge === age, window.toastySounds];
+  })).toEqual([6, true, [[5, 0, true]]]);
+  await expect.poll(() => page.evaluate(() => GAME.toastyCameoAge)).toBe(null);
   expect(errors).toEqual([]);
 });
 
-test('combos restart between levels and Feroz leaves boss health visible', async ({ page }, testInfo) => {
+test('combos restart between levels and Toasty leaves boss health visible', async ({ page }, testInfo) => {
   await startMobileGame(page);
-  await expect.poll(() => page.evaluate(async () => Boolean((await import('/src/media/assets.js')).Assets.ferozCameo)))
+  await expect.poll(() => page.evaluate(async () => Boolean((await import('/src/media/assets.js')).Assets.toastyCameo)))
     .toBe(true);
 
   const transition = await page.evaluate(() => {
@@ -217,7 +223,7 @@ test('combos restart between levels and Feroz leaves boss health visible', async
     GAME.onBossDefeated();
     for (let step = 0; step < 1010; step++) GAME.update(1 / 60);
     GAME.player.registerHit(0, false);
-    return [GAME.stageId, GAME.comboCount, GAME.ferozCameoAge];
+    return [GAME.stageId, GAME.comboCount, GAME.toastyCameoAge];
   });
   expect(transition).toEqual([2, 1, null]);
 
@@ -244,8 +250,8 @@ test('combos restart between levels and Feroz leaves boss health visible', async
       return green > blue ? 'amber' : 'magenta';
     });
     GAME.player.registerHit(0, false);
-    const triggeredAt = GAME.ferozCameoAge;
-    GAME.ferozCameoAge = 0.3;
+    const triggeredAt = GAME.toastyCameoAge;
+    GAME.toastyCameoAge = 0.3;
     GAME.render();
     const after = readHealthStrip();
     return {
@@ -263,10 +269,10 @@ test('combos restart between levels and Feroz leaves boss health visible', async
     colors: ['amber', 'amber', 'magenta', 'empty'],
     healthUncovered: true,
   });
-  await page.screenshot({ path: testInfo.outputPath('feroz-boss.png'), scale: 'css' });
+  await page.screenshot({ path: testInfo.outputPath('toasty-boss.png'), scale: 'css' });
 });
 
-test('Arthas rejecting an attack leaves the Feroz cameo waiting for the fifth effective hit', async ({ page }) => {
+test('Arthas rejecting an attack leaves the Toasty cameo waiting for the fifth effective hit', async ({ page }) => {
   await startMobileGame(page);
   const result = await page.evaluate(() => {
     const arena = GAME.locks.find(lock => lock.boss);
@@ -286,7 +292,7 @@ test('Arthas rejecting an attack leaves the Feroz cameo waiting for the fifth ef
     const attack = () => {
       player.startAttack(0);
       player.performHit(0);
-      return { hp: boss.hp, combo: GAME.comboCount, cameo: GAME.ferozCameoAge };
+      return { hp: boss.hp, combo: GAME.comboCount, cameo: GAME.toastyCameoAge };
     };
     for (let hit = 0; hit < 3; hit++) attack();
     const fourth = attack();
@@ -296,7 +302,7 @@ test('Arthas rejecting an attack leaves the Feroz cameo waiting for the fifth ef
     boss.state = 'idle';
     boss.z = 0;
     const fifth = attack();
-    GAME.ferozCameoAge = 0.2;
+    GAME.toastyCameoAge = 0.2;
     const sixth = attack();
     return { fourth, rejected, fifth, sixth };
   });
@@ -305,6 +311,50 @@ test('Arthas rejecting an attack leaves the Feroz cameo waiting for the fifth ef
   expect(result.rejected).toEqual(result.fourth);
   expect(result.fifth).toEqual({ hp: 390, combo: 5, cameo: 0 });
   expect(result.sixth).toEqual({ hp: 384, combo: 6, cameo: 0.2 });
+});
+
+test('the death portrait and caption appear before respawn or continue', async ({ page }, testInfo) => {
+  await startMobileGame(page);
+  await expect.poll(() => page.evaluate(async () => Boolean((await import('/src/media/assets.js')).Assets.deathCameo)))
+    .toBe(true);
+  await page.evaluate(() => {
+    window.deathPortraits = 0;
+    window.deathLines = new Set();
+    const { ctx } = GAME;
+    const drawImage = ctx.drawImage.bind(ctx);
+    const fillText = ctx.fillText.bind(ctx);
+    ctx.drawImage = (source, ...args) => {
+      if (source instanceof HTMLImageElement && source.src.endsWith('/death-cameo.webp')) window.deathPortraits++;
+      drawImage(source, ...args);
+    };
+    ctx.fillText = (label, ...args) => {
+      if (label === 'YO CREO QUE' || label === 'SE MURIO!') window.deathLines.add(label);
+      fillText(label, ...args);
+    };
+    GAME.showToastyCameo();
+    GAME.player.invuln = 0;
+    GAME.player.takeHit(GAME.player.hp, GAME.player.x + 50);
+  });
+  await page.waitForFunction(() => !GAME.player.alive && GAME.player.deadT >= 0.2 && window.deathPortraits > 0);
+  expect(await page.evaluate(() => [...window.deathLines].join(' '))).toBe('YO CREO QUE SE MURIO!');
+  expect(await page.evaluate(() => GAME.toastyCameoAge)).toBe(null);
+  await page.screenshot({ path: testInfo.outputPath('death-landscape.png'), scale: 'css' });
+  await expect.poll(() => page.evaluate(() => [GAME.state, GAME.player.alive, GAME.player.lives]))
+    .toEqual(['playing', true, 2]);
+
+  await page.evaluate(() => {
+    window.deathPortraits = 0;
+    GAME.player.lives = 1;
+    GAME.player.invuln = 0;
+    GAME.player.takeHit(GAME.player.hp, GAME.player.x + 50);
+  });
+  await page.waitForFunction(() => !GAME.player.alive && window.deathPortraits > 0);
+  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('continue');
+  expect(await page.evaluate(() => {
+    const count = window.deathPortraits;
+    GAME.render();
+    return window.deathPortraits === count;
+  })).toBe(true);
 });
 
 test('rapid taps on arcade buttons are handled as control input without zoom', async ({ page }) => {
