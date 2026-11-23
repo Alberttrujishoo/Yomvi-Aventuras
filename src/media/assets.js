@@ -372,6 +372,7 @@ const Assets = {
   hero: null,
   mainScreen: null,
   specialEffect: null,
+  ferozCameo: null,
   bosses: new Map(),
 
   async loadTitle(onStatus) {
@@ -385,6 +386,10 @@ const Assets = {
 
   async loadSpecialEffect() {
     this.specialEffect = await loadImage('special-effect.webp');
+  },
+
+  async loadFerozCameo() {
+    this.ferozCameo = await loadImage('feroz-cameo.webp');
   },
 
   loadBoss(stageId, filename) {

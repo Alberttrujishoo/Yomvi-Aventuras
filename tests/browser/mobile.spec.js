@@ -143,3 +143,115 @@ test('the special renders two bottles and two compotes from the atlas and cleans
   await expect.poll(() => page.evaluate(() => GAME.player.specialEffect)).toBe(null);
   expect(errors).toEqual([]);
 });
+
+test('the Feroz cameo slides in on the fifth combo hit without covering touch controls', async ({ page }, testInfo) => {
+  const errors = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await page.addInitScript(() => {
+    const drawImage = CanvasRenderingContext2D.prototype.drawImage;
+    CanvasRenderingContext2D.prototype.drawImage = function (source, ...args) {
+      if (source instanceof HTMLImageElement && source.src.endsWith('/feroz-cameo.webp')) {
+        const { a, e, f } = this.getTransform();
+        window.ferozFrame = { left: e + args[0] * a, bottom: f + (args[1] + args[3]) * a };
+      }
+      return drawImage.call(this, source, ...args);
+    };
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Omitir intro' }).tap();
+  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('title');
+  await page.getByRole('button', { name: 'Iniciar', exact: true }).tap();
+  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('briefing');
+  await page.getByRole('button', { name: 'Empezar ya' }).tap();
+  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('playing');
+  await expect.poll(() => page.evaluate(async () => Boolean((await import('/src/media/assets.js')).Assets.ferozCameo)))
+    .toBe(true);
+
+  const attack = page.getByRole('button', { name: 'Golpear' });
+  expect(await page.evaluate(() => {
+    const { player, enemies } = GAME;
+    GAME.bannerData = null;
+    player.comboCount = 3;
+    player.registerHit(0, false);
+    enemies[0].x = player.x + 50;
+    enemies[0].y = player.y;
+    return [player.comboCount, GAME.ferozCameoAge];
+  })).toEqual([4, null]);
+  await attack.tap();
+  await page.waitForFunction(() => GAME.comboCount === 5 && GAME.ferozCameoAge >= 0.2 && window.ferozFrame);
+  expect(await page.evaluate(() => {
+    const age = GAME.ferozCameoAge;
+    GAME.player.registerHit(0, false);
+    return [GAME.comboCount, GAME.ferozCameoAge === age];
+  })).toEqual([6, true]);
+
+  const frame = await page.evaluate(() => window.ferozFrame);
+  const canvas = await page.locator('#game').boundingBox();
+  const special = await page.getByRole('button', { name: 'Giro especial' }).boundingBox();
+  expect(frame.left).toBeCloseTo(504, 0);
+  expect(canvas.y + (frame.bottom / 405) * canvas.height).toBeLessThan(special.y);
+  await page.screenshot({ path: testInfo.outputPath('feroz-landscape.png'), scale: 'css' });
+  await expect.poll(() => page.evaluate(() => GAME.ferozCameoAge)).toBe(null);
+  expect(errors).toEqual([]);
+});
+
+test('rapid taps on arcade buttons are handled as control input without zoom', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Omitir intro' }).tap();
+  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('title');
+  await page.getByRole('button', { name: 'Iniciar', exact: true }).tap();
+  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('briefing');
+  await page.getByRole('button', { name: 'Empezar ya' }).tap();
+  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('playing');
+  await page.evaluate(() => {
+    window.controlTaps = [];
+    window.addEventListener('touchend', event => {
+      if (event.target.closest('[data-action="attack"]')) window.controlTaps.push(event.defaultPrevented);
+    });
+  });
+  const attack = await page.getByRole('button', { name: 'Golpear' }).boundingBox();
+  const x = attack.x + attack.width / 2;
+  const y = attack.y + attack.height / 2;
+  await page.touchscreen.tap(x, y);
+  await page.touchscreen.tap(x, y);
+  await expect.poll(() => page.evaluate(() => window.controlTaps)).toEqual([true, true]);
+  await expect.poll(() => page.evaluate(() => GAME.player.state)).toBe('attack');
+  expect(await page.evaluate(() => window.visualViewport.scale)).toBe(1);
+});
+
+test('fullscreen keeps touch controls usable and restores the game on exit', async ({ page, browserName }) => {
+  if (browserName === 'webkit') {
+    await page.addInitScript(() => {
+      // Playwright runs desktop WebKit. Model iPhone Safari's unavailable API.
+      Object.defineProperty(document, 'fullscreenEnabled', { value: false });
+    });
+  }
+
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Omitir intro' }).tap();
+  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('title');
+  const fullscreen = page.getByRole('button', {
+    name: browserName === 'webkit' ? 'Ampliar juego' : 'Pantalla completa',
+  });
+  const canvas = page.locator('#game');
+  const initial = await canvas.boundingBox();
+  await fullscreen.tap();
+  await expect(fullscreen).toHaveAttribute('aria-pressed', 'true');
+  expect(await page.evaluate(() => Boolean(document.fullscreenElement))).toBe(browserName !== 'webkit');
+  expect((await canvas.boundingBox()).width).toBeGreaterThan(initial.width);
+  expect(await page.evaluate(() => GAME.state)).toBe('title');
+
+  await page.getByRole('button', { name: 'Iniciar', exact: true }).tap();
+  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('briefing');
+  await page.getByRole('button', { name: 'Empezar ya' }).tap();
+  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('playing');
+  await page.getByRole('button', { name: 'Giro especial' }).tap();
+  await expect.poll(() => page.evaluate(() => GAME.player.state)).toBe('special');
+  await fullscreen.tap();
+  await expect(fullscreen).toHaveAttribute('aria-pressed', 'false');
+  expect((await canvas.boundingBox()).width).toBeCloseTo(initial.width, 0);
+
+  const manifest = await page.request.get('/assets/yomvi.webmanifest');
+  expect(manifest.ok()).toBe(true);
+  expect(await manifest.json()).toMatchObject({ display: 'standalone' });
+});

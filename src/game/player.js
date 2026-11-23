@@ -506,6 +506,7 @@ class Player {
     if (this.comboCount >= 3) {
       this.game.comboFlash = 1;
     }
+    if (this.comboCount === 5) this.game.ferozCameoAge = 0;
   }
 
   updateAirAttack(dt) {

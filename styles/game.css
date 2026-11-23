@@ -1,6 +1,8 @@
 /* YOMVI ADVENTURES — arcade cabinet shell */
 * { box-sizing: border-box; }
 
+html { touch-action: none; }
+
 html, body {
   margin: 0;
   padding: 0;
@@ -54,6 +56,43 @@ body {
     0 0 90px rgba(64, 190, 255, 0.09),
     0 24px 70px rgba(0, 0, 0, 0.8);
   border-radius: 3px;
+}
+
+:is(:fullscreen, .game-expanded) #stage-wrap {
+  padding: env(safe-area-inset-top) env(safe-area-inset-right)
+    env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+:is(:fullscreen, .game-expanded) #game {
+  width: min(
+    calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right)),
+    calc((100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)) * 16 / 9)
+  );
+  border-radius: 0;
+}
+
+#fullscreenBtn {
+  position: fixed;
+  z-index: 31;
+  left: calc(50% + 30px);
+  bottom: calc(8px + env(safe-area-inset-bottom));
+  width: 44px;
+  height: 44px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-radius: 50%;
+  background: rgba(10, 6, 16, 0.8);
+  color: #e6dcff;
+  font: 700 23px/1 sans-serif;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+#fullscreenBtn[aria-pressed="true"] {
+  border-color: #ffe66d;
+}
+
+body.touch.portrait #fullscreenBtn {
+  display: none;
 }
 
 /* ---------- loading overlay ---------- */
@@ -224,6 +263,7 @@ body.touch.landscape.in-game #touch-controls {
   inset: 0;
   z-index: 30;
   pointer-events: none;
+  touch-action: none;
   --joy: clamp(96px, 24vh, 132px);
   --btn: clamp(50px, 13vh, 64px);
   --btn-lg: clamp(60px, 15.5vh, 78px);

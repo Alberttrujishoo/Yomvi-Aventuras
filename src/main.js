@@ -4,6 +4,7 @@ import { Input } from './input/actions.js';
 import { TouchControls } from './input/touch.js';
 import { Assets } from './media/assets.js';
 import { Sound } from './media/audio.js';
+import { initFullscreen } from './ui/fullscreen.js';
 import { playCreatorIntro } from './ui/intro.js';
 
 /* ============================================================
@@ -31,6 +32,7 @@ import { playCreatorIntro } from './ui/intro.js';
       game.skipIntro = null;
       game.state = 'title';
       Input.flush();
+      initFullscreen();
     });
   };
   window.addEventListener('blur', () => game.gamepad.setFocused(false));
@@ -55,6 +57,7 @@ import { playCreatorIntro } from './ui/intro.js';
   syncVisibility();
 
   void Assets.loadSpecialEffect();
+  void Assets.loadFerozCameo();
   Assets.loadTitle(setStatus).then(() => {
     game.applyAssets();
     game.muted = Sound.muted;

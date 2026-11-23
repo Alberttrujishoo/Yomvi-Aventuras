@@ -14,6 +14,7 @@ import { LEVELS } from '../levels/index.js';
 import { Assets } from '../media/assets.js';
 import { Sound } from '../media/audio.js';
 import { Art } from '../media/procedural-art.js';
+import { FEROZ_CAMEO_DURATION, drawFerozCameo } from '../ui/feroz-cameo.js';
 import { HUD } from '../ui/hud.js';
 
 /* ============================================================
@@ -211,6 +212,7 @@ class Game {
     this.comboCount = 0;
     this.comboTimer = 0;
     this.comboFlash = 0;
+    this.ferozCameoAge = null;
     this.damageFlash = 0;
     this.grabPrompt = false;
     this.hitstopT = 0;
@@ -326,6 +328,7 @@ class Game {
   startContinue() {
     this.state = 'continue';
     this.continueTime = 10;
+    this.ferozCameoAge = null;
     this.hitstopT = 0;
     this.shakeT = 0;
     this.bannerData = null;
@@ -616,6 +619,10 @@ class Game {
   updateFlashTimers(dt) {
     this.damageFlash = Math.max(0, this.damageFlash - dt);
     this.comboFlash = Math.max(0, this.comboFlash - dt);
+    if (this.ferozCameoAge !== null) {
+      this.ferozCameoAge += dt;
+      if (this.ferozCameoAge >= FEROZ_CAMEO_DURATION) this.ferozCameoAge = null;
+    }
     this.flashScreen = Math.max(0, this.flashScreen - dt * 1.9);
     if (this.levelMsg) {
       this.levelMsg.t -= dt;
@@ -1199,6 +1206,9 @@ class Game {
     drawNpcBubble(this, ctx);
     if (this.state === 'paused') HUD.pause(ctx, this);
     this.drawCabinetOverlay(ctx);
+    if (this.state === 'playing' && this.ferozCameoAge !== null) {
+      drawFerozCameo(ctx, this.ferozCameoAge, this.reducedMotion);
+    }
   }
 
   drawTitleScreen(ctx) {

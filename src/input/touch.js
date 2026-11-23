@@ -60,6 +60,11 @@ const TouchControls = {
     this.bindPause();
     this.bindTapToStart();
 
+    // Cancel Safari's tap gesture while pointer events handle the arcade controls.
+    document.getElementById('touch-controls').addEventListener('touchend', (event) => {
+      if (event.cancelable) event.preventDefault();
+    }, { passive: false });
+
     window.addEventListener('blur', () => this.releaseAll());
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) this.releaseAll();
@@ -258,7 +263,7 @@ const TouchControls = {
   bindTapToStart() {
     window.addEventListener('pointerdown', (e) => {
       if (!this.isTouch || this.game.viewBlocked) return;
-      if (e.target?.closest?.('#touch-controls, #touchStart, #intro, #rotateHint')) return;
+      if (e.target?.closest?.('#touch-controls, #touchStart, #fullscreenBtn, #intro, #rotateHint')) return;
       if (MENU_LABELS[this.game.state]) Input.tap('start');
     }, { passive: true });
   },
