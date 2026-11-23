@@ -37,4 +37,6 @@ npm run test:browser
 
 Si el proyecto existente usa **Cloudflare Pages con Git**, conserva el proyecto y su dominio. En la configuración de compilación usa la raíz del repositorio, Framework **None**, el comando `npm run build` y el directorio de salida `dist`. Para verificar una compilación local, ejecuta `npm run build` y luego `npm run dev -- --dist`. [Integración con Git de Cloudflare Pages](https://developers.cloudflare.com/pages/get-started/git-integration/)
 
+Cloudflare Pages puede servir el MP4 completo cuando el navegador pide un rango. El intro tiene un respaldo para WebKit y se puede omitir en cualquier momento. [Cómo Cloudflare sirve los archivos de Pages](https://developers.cloudflare.com/pages/configuration/serving-pages/)
+
 Si en el panel figura como **Worker**, usa `dist` como directorio de archivos estáticos en la configuración del Worker existente. El juego se sirve como sitio estático. [Configuración de archivos estáticos de Cloudflare Workers](https://developers.cloudflare.com/workers/static-assets/binding/)

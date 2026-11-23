@@ -44,3 +44,17 @@ test('touch starts the game, keeps simultaneous actions and pauses on rotation',
   await expect.poll(() => page.evaluate(() => GAME.state)).toBe('playing');
   expect(failures).toEqual([]);
 });
+
+test('plays the intro if the host sends a complete MP4 for range requests', async ({ page }) => {
+  await page.route('**/assets/video/intro.mp4', async (route) => {
+    const { range, ...headers } = route.request().headers();
+    const response = await route.fetch({ headers });
+    expect(response.status()).toBe(200);
+    await route.fulfill({ response, headers: { 'Content-Type': 'video/mp4' } });
+  });
+  await page.goto('/');
+  await expect.poll(() => page.locator('#introVideo').evaluate((video) => video.currentTime), { timeout: 10_000 })
+    .toBeGreaterThan(0.25);
+  await page.getByRole('button', { name: 'Omitir intro' }).tap();
+  await expect.poll(() => page.evaluate(() => GAME.state)).toBe('title');
+});
