@@ -4,6 +4,7 @@ import { Input } from './input/actions.js';
 import { TouchControls } from './input/touch.js';
 import { Assets } from './media/assets.js';
 import { Sound } from './media/audio.js';
+import { CheatMenu } from './ui/cheat-menu.js';
 import { initFullscreen } from './ui/fullscreen.js';
 import { playCreatorIntro } from './ui/intro.js';
 
@@ -26,12 +27,14 @@ import { playCreatorIntro } from './ui/intro.js';
   motion.addEventListener('change', syncMotion);
   window.GAME = game;
   TouchControls.init(game);
+  CheatMenu.init(game);
 
   const startCreatorIntro = () => {
     game.skipIntro = playCreatorIntro(() => {
       game.skipIntro = null;
       game.state = 'title';
       Input.flush();
+      CheatMenu.sync();
       initFullscreen();
     });
   };

@@ -41,6 +41,26 @@
   <button type="button" id="touchStart" hidden>Iniciar</button>
   <button type="button" id="fullscreenBtn" aria-label="Pantalla completa" aria-pressed="false" hidden>⛶</button>
 
+  <button type="button" id="trampasBtn" hidden>Yomvi-trampas</button>
+
+  <div id="trampas" class="hidden" role="dialog" aria-modal="true" aria-labelledby="trampasTitle"
+       aria-describedby="trampasSub" aria-hidden="true">
+    <div class="trampas-card">
+      <h2 id="trampasTitle">YOMVI-TRAMPAS</h2>
+      <p id="trampasSub" class="trampas-sub">ESCRIBE UN CÓDIGO Y PULSA ENTER</p>
+      <form id="trampasForm" autocomplete="off" novalidate>
+        <input id="trampasInput" type="text" name="code" maxlength="24" inputmode="text"
+               autocapitalize="characters" autocomplete="off" autocorrect="off" spellcheck="false"
+               enterkeyhint="go" placeholder="CÓDIGO" aria-label="Código secreto" />
+        <div class="trampas-actions">
+          <button type="submit" class="trampas-btn trampas-primary">ENTER</button>
+          <button type="button" id="trampasClose" class="trampas-btn">CERRAR</button>
+        </div>
+      </form>
+      <p id="trampasMsg" class="trampas-msg" role="status" aria-live="polite"></p>
+    </div>
+  </div>
+
   <div id="touch-controls" role="group" aria-label="Controles táctiles">
     <div id="joystick" class="joystick" role="group" aria-label="Joystick de movimiento">
       <div id="joystickKnob" class="joystick-knob" aria-hidden="true"></div>

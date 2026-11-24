@@ -15,6 +15,7 @@ import { Assets } from '../media/assets.js';
 import { Sound } from '../media/audio.js';
 import { Art } from '../media/procedural-art.js';
 import { DEATH_CAMEO_DURATION, TOASTY_CAMEO_DURATION } from '../ui/cameo.js';
+import { CheatMenu } from '../ui/cheat-menu.js';
 import { HUD } from '../ui/hud.js';
 
 /* ============================================================
@@ -25,6 +26,16 @@ import { HUD } from '../ui/hud.js';
 const SIMULATION_STEP = 1 / 60;
 const MAX_CATCH_UP = 6 * SIMULATION_STEP;
 const MOBILE_FRAME_MS = 1000 / 60;
+
+// Codes the title screen listens for, and the links a code may open.
+const HIDDEN_CODES = ['ROXYFOXY', 'AHPUCCA', 'TRAMPOSO'];
+const CHEAT_LINKS = {
+  TRAMPOSO: {
+    url: 'https://www.youtube.com/watch?v=gR8XtqnbdQo',
+    lines: ['ERES UN TRAMPOSO...', 'COMO YOMVI'],
+  },
+};
+const TRAMPOSO_HOLD = 3; // black screen seconds before the link opens
 
 class Game {
   constructor(canvas, { compact = false } = {}) {
@@ -43,6 +54,7 @@ class Game {
     this.lastTs = null;
     this.simulationTime = 0;
     this.viewBlocks = new Set();
+    this.uiLocked = false; // a UI modal (YOMVI-TRAMPAS) holds the input while open
     this.gamepad = createGamepadInput(Input);
     this.skipIntro = null;
     this.score = 0;
@@ -134,6 +146,7 @@ class Game {
   loop(ts) {
     if (this.viewBlocked) {
       TouchControls.sync();
+      CheatMenu.sync();
       requestAnimationFrame(this.loop);
       return;
     }
@@ -155,6 +168,7 @@ class Game {
     }
 
     TouchControls.sync();
+    CheatMenu.sync();
     const stateChanged = this.lastRenderedState !== this.state;
     const staticFrame = this.state === 'intro' || this.state === 'title' || this.state === 'paused';
     const renderDue = this.renderScale === 1 || this.nextRenderTime === null || ts + 0.25 >= this.nextRenderTime;
@@ -189,6 +203,10 @@ class Game {
     this.bossStarted = false;
     this.bossRecoveryTime = 0;
     this.bossRecovery = null;
+    this.tramposoLink = null;
+    this.tramposoTime = 0;
+    this.tramposoMax = TRAMPOSO_HOLD;
+    this.tramposoBlocked = false;
     this.enemies = [];
     this.projectiles = [];
     this.shockwaves = [];
@@ -320,11 +338,52 @@ class Game {
     this.stageId = 1;
     this.stage = null;
     Input.flush();
+    CheatMenu.sync();
   }
 
   saveHighScore() {
     this.hiScore = Math.max(this.hiScore, this.score);
     this.saveHi();
+  }
+
+  // Single entry point for hidden codes, shared by the typed sequences and YOMVI-TRAMPAS.
+  applyCheatCode(rawCode) {
+    const code = String(rawCode ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (code === 'ROXYFOXY') {
+      this.roxyMode = !this.roxyMode;
+      Sound.playCoinSfx();
+      return true;
+    }
+    if (code === 'AHPUCCA') {
+      this.stageSelectIndex = 0;
+      this.state = 'stageselect';
+      Sound.playCoinSfx();
+      return true;
+    }
+    const link = CHEAT_LINKS[code];
+    if (link) {
+      Sound.playCoinSfx();
+      this.startTramposo(link);
+      return true;
+    }
+    return false;
+  }
+
+  // Link codes hold on a black screen first, then open a new tab.
+  startTramposo(link) {
+    this.tramposoLink = link;
+    this.tramposoTime = this.tramposoMax;
+    this.tramposoBlocked = false;
+    this.state = 'tramposo';
+    Input.flush();
+  }
+
+  // window.open must run on a user gesture, so a blocked popup is retried with another press.
+  openCheatLink(url) {
+    // Passing 'noopener' would make window.open always return null, so the block could not be detected.
+    const win = window.open(url, '_blank');
+    if (win) win.opener = null;
+    return !!win;
   }
 
   startContinue() {
@@ -447,20 +506,29 @@ class Game {
       return;
     }
 
-    if (this.state === 'title') {
-      // Hidden ROXYFOXY mode: burger shotgun + burger rain.
-      if (Input.secret('ROXYFOXY')) {
-        Input.flush();
-        this.roxyMode = !this.roxyMode;
-        Sound.playCoinSfx();
-        return;
+    // While a UI modal (YOMVI-TRAMPAS) is open, the modal owns every input source.
+    if (this.uiLocked) return;
+
+    if (this.state === 'tramposo') {
+      if (this.tramposoTime > 0) {
+        this.tramposoTime = Math.max(0, this.tramposoTime - dt);
+        if (this.tramposoTime > 0) return; // the black screen cannot be skipped
+      } else if (!Input.hit('start')) {
+        return; // a fresh press is needed to retry the blocked window
       }
-      if (Input.secret('AHPUCCA')) {
-        Input.flush();
-        this.stageSelectIndex = 0;
-        this.state = 'stageselect';
-        Sound.playCoinSfx();
-        return;
+      this.tramposoBlocked = !this.openCheatLink(this.tramposoLink.url);
+      if (!this.tramposoBlocked) this.toTitle();
+      return;
+    }
+
+    if (this.state === 'title') {
+      // Hidden codes typed on the title screen (same effect as YOMVI-TRAMPAS).
+      for (const code of HIDDEN_CODES) {
+        if (Input.secret(code)) {
+          Input.flush();
+          this.applyCheatCode(code);
+          return;
+        }
       }
       if (Input.hit('stage1')) {
         Input.flush();
@@ -1189,6 +1257,11 @@ class Game {
 
     if (this.state === 'teaser') {
       HUD.teaser(ctx, this);
+      return;
+    }
+
+    if (this.state === 'tramposo') {
+      HUD.tramposo(ctx, this);
       return;
     }
 

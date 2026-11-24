@@ -255,7 +255,7 @@ const TouchControls = {
   bindTapToStart() {
     window.addEventListener('pointerdown', (e) => {
       if (!this.isTouch || this.game.viewBlocked) return;
-      if (e.target?.closest?.('#touch-controls, #touchStart, #fullscreenBtn, #intro, #rotateHint')) return;
+      if (e.target?.closest?.('#touch-controls, #touchStart, #fullscreenBtn, #trampasBtn, #trampas, #intro, #rotateHint')) return;
       if (START_SCREEN_LABELS.has(this.game.state)) Input.tap('start');
     }, { passive: true });
   },

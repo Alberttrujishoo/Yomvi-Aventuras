@@ -898,6 +898,38 @@ const HUD = {
   },
 
   /* ==========================================================
+     TRAMPOSO BLACK SCREEN (hidden code interstitial)
+     ========================================================== */
+  tramposo(ctx, g) {
+    const t = g.time;
+    const alpha = g.tramposoBlocked || g.tramposoTime < 0.4 ? 1 : clamp((g.tramposoMax - g.tramposoTime) / 0.35, 0, 1);
+    const lines = g.tramposoLink?.lines ?? ['', ''];
+
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(0, 0, CFG.W, CFG.H);
+
+    text(ctx, lines[0], CFG.W / 2, 248, 34, UI.white, {
+      align: 'center', outlineW: 6, outline: '#0b0712', spacing: 2,
+      alpha, glow: 'rgba(255, 95, 174, 0.5)', glowSize: 18,
+    });
+    text(ctx, lines[1], CFG.W / 2, 300, 22, UI.goldHot, {
+      align: 'center', outlineW: 5, outline: '#1a0a12', spacing: 4,
+      alpha, glow: 'rgba(255, 209, 102, 0.45)', glowSize: 14,
+    });
+
+    const dots = '.'.repeat(1 + (Math.floor(t * 2) % 3));
+    text(ctx, dots, CFG.W / 2, 348, 24, UI.cyan, {
+      align: 'center', outlineW: 3, spacing: 8, alpha: alpha * 0.8,
+    });
+
+    if (g.tramposoBlocked) {
+      text(ctx, 'VENTANA BLOQUEADA · PULSA PARA ABRIR', CFG.W / 2, 470, 12, UI.dim, {
+        align: 'center', outlineW: 3, font: FONT_MONO, spacing: 2,
+      });
+    }
+  },
+
+  /* ==========================================================
      POST-BOSS BLACK TEASER (before the final score)
      ========================================================== */
   teaser(ctx, g) {

@@ -3,6 +3,7 @@ const CHARGE_SECONDS = 0.65;
 const START_SCREEN_LABELS = new Map([
   ['title', 'Iniciar'],
   ['stageselect', 'Seleccionar'],
+  ['tramposo', 'Abrir'],
   ['briefing', 'Empezar ya'],
   ['paused', 'Reanudar'],
   ['continue', 'Continuar'],
@@ -33,6 +34,12 @@ for (const [action, bindings] of Object.entries(ACTIONS)) {
   }
 }
 
+// Typing inside a field (YOMVI-TRAMPAS) must never reach the arcade controls.
+function isEditableTarget(target) {
+  if (!target || typeof target.closest !== 'function') return false;
+  return !!target.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"]');
+}
+
 function createInput() {
   const held = new Map();
   const charging = new Map();
@@ -47,6 +54,7 @@ function createInput() {
 
     init(target = window) {
       target.addEventListener('keydown', (e) => {
+        if (isEditableTarget(e.target)) return;
         if (e.key === 'Enter' && e.target?.closest?.('button')) return;
         const actions = codes.get(e.code);
         if (actions && e.code.startsWith('Arrow')) e.preventDefault();

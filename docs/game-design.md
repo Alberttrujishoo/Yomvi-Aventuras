@@ -8,7 +8,7 @@ Prototipo jugable de **beat 'em up arcade 2.5D** inspirado en *The Simpsons Arca
 
 ## ▶ Cómo jugar
 
-Consulta el [README](../README.md) para instalar, iniciar y probar el juego. El título permite saltar al mall, al hospital o a la calle con **1**, **2** y **3**. La secuencia `AHPUCCA` abre la selección de nivel con las flechas y **Enter** o **Z**.
+Consulta el [README](../README.md) para instalar, iniciar y probar el juego. El título permite saltar al mall, al hospital o a la calle con **1**, **2** y **3**. La secuencia `AHPUCCA` abre la selección de nivel con las flechas y **Enter** o **Z**. En el móvil, donde no se pueden teclear secuencias, el botón **YOMVI-TRAMPAS** del título abre un cuadro para escribir el código y aplicarlo con **ENTER**.
 
 ## 🎵 Música
 
@@ -38,6 +38,9 @@ Consulta el [README](../README.md) para instalar, iniciar y probar el juego. El 
 | Stage 2 directo (título) | `2` (debug) |
 | Stage 3 directo (título) | `3` (debug) |
 | Menú secreto de stages (título) | escribe `AHPUCCA` |
+| Escopeta de hamburguesas (título) | escribe `ROXYFOXY` |
+| Video externo (título) | escribe `TRAMPOSO` → pantalla negra 3 s y pestaña nueva |
+| Yomvi-trampas (móvil y sin teclado) | botón del título → escribe el código → `ENTER` |
 | Móvil · mover | Joystick izquierdo |
 | Móvil · golpear / saltar / especial | Botones `GOLPE` / `SALTO` / `ESP.` |
 | Móvil · pausa | Botón `II` (o toca la pantalla si está pausado) |

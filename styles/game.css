@@ -453,3 +453,194 @@ body.touch.portrait:not(.in-intro) #rotateHint {
 body.touch #game {
   box-shadow: 0 0 0 1px #33234a;
 }
+
+/* ---------- YOMVI-TRAMPAS (hidden code entry) ---------- */
+#trampasBtn { display: none; }
+
+#trampasBtn:not([hidden]) {
+  display: block;
+  position: fixed;
+  z-index: 31;
+  transform: translate(-50%, -50%);
+  padding: 7px 18px;
+  border: 2px solid rgba(255, 209, 102, 0.6);
+  border-radius: 999px;
+  background: rgba(12, 7, 20, 0.78);
+  color: #ffe9a8;
+  font: 800 14px "Courier New", monospace;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: 0 2px 4px #000;
+  box-shadow:
+    0 0 0 1px rgba(255, 95, 174, 0.22),
+    0 0 18px rgba(255, 209, 102, 0.16);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+#trampasBtn:not([hidden]):hover,
+#trampasBtn:not([hidden]):focus-visible {
+  border-color: #ffe066;
+  background: rgba(28, 16, 40, 0.9);
+  color: #fff6cf;
+  outline: none;
+  box-shadow:
+    0 0 0 1px rgba(255, 95, 174, 0.45),
+    0 0 24px rgba(255, 209, 102, 0.4);
+}
+
+#trampas {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding:
+    max(18px, env(safe-area-inset-top))
+    max(14px, env(safe-area-inset-right))
+    max(18px, env(safe-area-inset-bottom))
+    max(14px, env(safe-area-inset-left));
+  background: rgba(4, 2, 8, 0.8);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+#trampas.hidden { display: none; }
+
+.trampas-card {
+  width: min(430px, 94vw);
+  margin: max(6vh, 18px) 0 auto;
+  padding: 20px 20px 14px;
+  border: 2px solid #5b3b82;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #1b0f2e 0%, #110a1d 100%);
+  box-shadow:
+    0 0 0 1px rgba(255, 209, 102, 0.14),
+    0 0 34px rgba(255, 61, 127, 0.18),
+    0 18px 60px rgba(0, 0, 0, 0.75);
+  text-align: center;
+  color: #e6dcff;
+}
+
+.trampas-card h2 {
+  margin: 0 0 4px;
+  font-family: "Arial Black", Impact, sans-serif;
+  font-size: clamp(20px, 5.4vw, 28px);
+  letter-spacing: 2px;
+  color: #ffe066;
+  text-shadow: 0 3px 0 #c11d4c, 0 0 20px rgba(255, 61, 127, 0.5);
+}
+
+.trampas-sub {
+  margin: 0 0 16px;
+  font: 700 10px "Courier New", monospace;
+  letter-spacing: 1.6px;
+  color: #b9a8db;
+}
+
+#trampasInput {
+  width: 100%;
+  min-height: 52px;
+  padding: 10px 12px;
+  border: 2px solid #5b3b82;
+  border-radius: 8px;
+  background: #0a0614;
+  color: #ffe066;
+  font: 900 clamp(16px, 4.6vw, 22px) "Courier New", monospace;
+  letter-spacing: 5px;
+  text-align: center;
+  text-transform: uppercase;
+  caret-color: #ffe066;
+  outline: none;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+#trampasInput::placeholder {
+  color: #5f4d7d;
+  letter-spacing: 3px;
+}
+
+#trampasInput:focus {
+  border-color: #ffe066;
+  box-shadow: 0 0 0 1px rgba(255, 224, 102, 0.35), 0 0 18px rgba(255, 209, 102, 0.25);
+}
+
+.trampas-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.trampas-btn {
+  flex: 1;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 2px solid #5b3b82;
+  border-radius: 8px;
+  background: #150d22;
+  color: #d9cdf5;
+  font: 800 13px "Courier New", monospace;
+  letter-spacing: 2px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.trampas-btn:hover,
+.trampas-btn:focus-visible {
+  border-color: #8b6ab8;
+  color: #fff;
+  outline: none;
+}
+
+.trampas-primary {
+  border-color: #ffc933;
+  background: linear-gradient(180deg, #ffd75e 0%, #f2a01f 100%);
+  color: #2a1500;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 18px rgba(255, 209, 102, 0.3);
+}
+
+.trampas-primary:hover,
+.trampas-primary:focus-visible {
+  border-color: #fff3b8;
+  background: linear-gradient(180deg, #ffe68b 0%, #ffb02e 100%);
+  color: #2a1500;
+}
+
+.trampas-msg {
+  min-height: 16px;
+  margin: 10px 0 0;
+  font: 700 10px "Courier New", monospace;
+  letter-spacing: 1.6px;
+  color: #ff8fb0;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.trampas-msg.show { opacity: 1; }
+
+.trampas-card.shake {
+  animation: trampasShake 0.38s ease;
+}
+
+@keyframes trampasShake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(4px); }
+  30%, 50%, 70% { transform: translateX(-6px); }
+  40%, 60% { transform: translateX(6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trampas-card.shake { animation: none; }
+}
+
+body.touch.portrait #trampas,
+body.touch.portrait #trampasBtn { display: none !important; }
+
+/* The modal covers the whole cabinet, so hide the controls that would sit under it. */
+body.trampas-open #touchStart,
+body.trampas-open #fullscreenBtn,
+body.trampas-open #touch-controls { display: none !important; }
+
